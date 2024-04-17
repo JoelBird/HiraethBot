@@ -1,0 +1,13 @@
+
+aiohttp>=3.7.4,<4
+nest_asyncio
+python-binance
+web3
+aioschedule
+fastapi
+uvicorn
+jinja2
+opencv-python
+python-multipart
+pyshorteners
+Pillow

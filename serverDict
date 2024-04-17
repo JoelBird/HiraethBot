@@ -1,0 +1,36 @@
+{
+    "participantsDict": {
+        "433648637763911680": {
+            "attackRoll": 17,
+            "victimName": "loofyyyyy",
+            "health": "61",
+            "memberName": "joelbird.",
+            "memberId": "433648637763911680",
+            "heroName": "Knights of Hiraeth #352",
+            "heroAttack": "10",
+            "heroDefence": "8",
+            "heroImage": "https://ipfs.io/ipfs/bafybeigvnxlrvzmk6qu7wnhjyzeia5ms6ufwmsdydshzt6skxltfpwld7u",
+            "heroClass": "knight",
+            "weapon1": "Morning Star",
+            "weapon2": "Water Sword"
+        },
+        "1178359051671842861": {
+            "attackRoll": 19,
+            "victimName": "joelbird.",
+            "health": "-17",
+            "memberName": "loofyyyyy",
+            "memberId": "1178359051671842861",
+            "heroName": "Druid #107",
+            "heroAttack": "6",
+            "heroDefence": "1",
+            "heroImage": "https://ipfs.io/ipfs/bafybeicxl5ox57ygcvpe2rg2wpau2zhu7sirtq3bizmt6r3hpyoobng6jm",
+            "heroClass": "druid",
+            "weapon1": "Staff-of-Gilded-Shadows",
+            "weapon2": "Earth-Falx"
+        }
+    },
+    "battleStartUnix": "1713364256",
+    "numberOfParticipants": "2",
+    "battleMessageId": "1230163105313587261",
+    "battleInSession": "true"
+}

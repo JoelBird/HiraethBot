@@ -1,0 +1,36 @@
+{
+    "433648637763911680": {
+        "discordName": "joelbird.",
+        "wins": "1",
+        "losses": "0",
+        "polygonWallet": "0xb5105c731c5F3ec29eE4E84C7e0D45e8Ef43B300",
+        "ethereumWallet": "0x0847BdA815625B1b54283a2547Fe8230e8ed7226",
+        "heroOptionsPosition": "0"
+    },
+    "960601733556482108": {
+        "discordName": "rayjon_openproj",
+        "wins": "0",
+        "losses": "0",
+        "polygonWallet": "0xb5105c731c5F3ec29eE4E84C7e0D45e8Ef43B300",
+        "ethereumWallet": "0x0847BdA815625B1b54283a2547Fe8230e8ed7226",
+        "knightOptionsPosition": "0",
+        "druidOptionsPosition": "0",
+        "heroOptionsPosition": "0"
+    },
+    "1069320759312400435": {
+        "discordName": "sweetiepie2335",
+        "wins": "0",
+        "losses": "0",
+        "polygonWallet": "0xb5105c731c5F3ec29eE4E84C7e0D45e8Ef43B300",
+        "ethereumWallet": "false",
+        "heroOptionsPosition": "0"
+    },
+    "1178359051671842861": {
+        "discordName": "loofyyyyy",
+        "wins": "0",
+        "losses": "0",
+        "polygonWallet": "0xb5105c731c5F3ec29eE4E84C7e0D45e8Ef43B300",
+        "ethereumWallet": "false",
+        "heroOptionsPosition": "0"
+    }
+}
