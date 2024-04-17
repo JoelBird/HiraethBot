@@ -47,13 +47,19 @@ class victimSelect(discord.ui.Select):
             await interaction.followup.send(embed=embed, ephemeral = True)
             return
         
+        victimName = str(self.values[0])
+        if victimName == str(interaction.user.name):
+            embed = discord.Embed(title="",description=f'You cannot Attack yourself', color=colorBlack)
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+
+        
         hasSelectedVictim, victimName = await botFunctions.hasSelectedVictim(interaction)
         if hasSelectedVictim == True:
             embed = discord.Embed(title="",description=f'You have already selected `{victimName}` as a victim', color=colorBlack)
             await interaction.followup.send(embed=embed, ephemeral = True)
             return
         
-        victimName = str(self.values[0])
         await botFunctions.setParticipantDictValue(interaction, 'victimName', victimName)
         embed = discord.Embed(title="",description='You have chosen to attack `' + victimName+'`', color=colorRed)
         await interaction.followup.send(embed=embed, ephemeral = True)

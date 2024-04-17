@@ -373,7 +373,7 @@ async def getHeroData(heroName, memberId):
     if 'Druid' in heroName:
         walletDruids = await getWalletDruids(polygonWallet)
         heroData = next((v for v in walletDruids.values() if v['name'] == heroName), None)
-
+    print(heroData)
     return(heroData)
     
 
@@ -415,7 +415,7 @@ async def getWalletKnights(walletAddress):
         defence = attributes.get('Defence', None)
         image = metadata['image']
         image = image.rsplit("/", 1)[-1]
-        image =  'https://ipfs.io/ipfs/' + image
+        image =  'https://' + image + '.ipfs.nftstorage.link/' #Using 'https://ipfs.io/ipfs/' + image doesnt render in Discord
         name = metadata['name']
         
         dict[i] = {}
@@ -474,7 +474,7 @@ async def getWalletDruids(walletAddress):
         defence = attributes.get('Defence', None)
         image = metadata['image']
         image = image.rsplit("/", 1)[-1]
-        image =  'https://ipfs.io/ipfs/' + image
+        image =  'https://' + image + '.ipfs.nftstorage.link/' #Using 'https://ipfs.io/ipfs/' + image doesnt render in Discord
         name = metadata['name']
         
         dict[i] = {}
