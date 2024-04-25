@@ -364,4 +364,4 @@ def slashCommands(tree):
         await botFunctions.setServerDictValue('battleInSession', 'true')
         await botFunctions.setServerDictValue('battleMode', 'ghost')
 
-        await botFunctions.startBattle()
+        await botFunctions.startBattle(interaction.client)
