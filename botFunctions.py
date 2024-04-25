@@ -171,7 +171,7 @@ async def getRandomHero():
             listOfMemberIds.append(membersDict[account]['discordId'])
             listOfMemberNames.append(membersDict[account]['discordName'])
         
-        length = len(listOfWallets)
+        length = len(listOfWallets) - 1
         print(length)
         selectedWalletPosition = random.randint(0, length)
         print(selectedWalletPosition)
