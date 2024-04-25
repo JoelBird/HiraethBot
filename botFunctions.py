@@ -157,6 +157,7 @@ async def getRandomHero():
         randomWalletType = random.choice(walletTypes)
         listOfWallets = []
         listOfMemberIds = []
+        listOfMemberNames = []
 
         f = open("memberAccounts")
         s = f.read()
@@ -168,21 +169,23 @@ async def getRandomHero():
             
             listOfWallets.append(membersDict[account][randomWalletType])
             listOfMemberIds.append(membersDict[account]['discordId'])
-            listOfMemberIds.append(membersDict[account]['discordName'])
+            listOfMemberNames.append(membersDict[account]['discordName'])
         
-        randomWallet = random.choice(listOfWallets)
+        length = len(listOfWallets)
+        selectedWalletPosition = random.randint(0, length)
+        selectedWallet = listOfWallets[selectedWalletPosition]
+        memberId = listOfMemberIds[selectedWalletPosition]
+        memberName = listOfMemberNames[selectedWalletPosition]
+        
         if randomWalletType == 'ethereumWallet':
-            walletThings = await getWalletKnights(randomWallet)
+            walletThings = await getWalletKnights(selectedWallet)
 
         if randomWalletType == 'polygonWallet':
-            walletThings = await getWalletDruids(randomWallet)
+            walletThings = await getWalletDruids(selectedWallet)
         
         length = len(walletThings)
         random_number = random.randint(0, length)
-        
-        memberId = listOfMemberIds[random_number]['discordId']
         heroName = walletThings[random_number]['heroName']
-        memberName = walletThings[random_number]['discordName']
 
         return(memberName, memberId, heroName)
 
