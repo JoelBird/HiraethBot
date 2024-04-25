@@ -1,8 +1,19 @@
 {
-    "participantsDict": {
-    },
-    "battleStartUnix": "1713381272",
-    "numberOfParticipants": "0",
-    "battleMessageId": "1230234726430671030",
-    "battleInSession": "false"
+    "participantsDict": {},
+    "battleStartUnix": "false",
+    "battleMessageId": "false",
+    "battleChannelId": "false",
+    "battleInSession": "false",
+    "battleMode": "false",
+    "participantsToStart": "false",
+    "battleSet": "false",
+    "druidWins": "3",
+    "knightWins": "2",
+    "druidTournamentWins": "0",
+    "knightTournamentWins": "0",
+    "tournamentName": "false",
+    "isTournamentActive": "false",
+    "staff": [
+        "433648637763911680"
+    ]
 }

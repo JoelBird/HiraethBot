@@ -25,6 +25,166 @@ colorWhite = discord.Colour.from_str('#FFFFFF')
 colorPink = discord.Colour.from_str('#ffc0d6')
 colorGold = discord.Colour.from_str('#FDD835')
 
+async def startBattle(bot):
+
+
+        battleMode = int(await getServerDictValue('battleMode'))
+        if battleMode != 'ghost':
+            await cancelBattleMessage(bot)
+
+        battleChannelId = int(await getServerDictValue('battleChannelId'))
+        battleChannel = bot.get_channel(battleChannelId)
+        
+        view = discord.ui.View()
+        button = views.theButton(label="Roll For Attack", custom_id='awdg423d', style=discord.ButtonStyle.red)
+        view.add_item(button)
+
+        button = views.theButton(label="Roll For Defence", custom_id='awdwad1312', style=discord.ButtonStyle.blurple)
+        view.add_item(button)
+
+        options = await getVictimOptions()
+        select = views.victimSelect(options=options)
+        view.add_item(select)
+
+        participantNames = ''
+        participantIds = await getAllParticipantIds()
+        for memberId in participantIds:
+            memberNameString = '<@' + str(memberId) + '>'
+            participantNames = participantNames + memberNameString + '\n'
+        
+        embed = discord.Embed(title=f"Battle has commenced!", description=f"**Participants:**\n{participantNames}", color=colorGold)
+        embed.set_image(url = "https://i.postimg.cc/wMJQnydT/fotor-ai-20240403211513.jpg")
+        await battleChannel.send(embed=embed)
+
+        await asyncio.sleep(15)
+
+        numberOfRemainingPlayers = int(await getNumberOfRemainingPlayers())
+        roundNumber = 1
+        while numberOfRemainingPlayers >= 2:
+            
+            nowUnix = await getNowUnix()
+            end = nowUnix + 30
+            timestamp = await unixToTimestamp(end)
+
+            embed = discord.Embed(title=f"Round {roundNumber}", description=f"`Time left:` {timestamp}", color=colorRed)
+            embed.set_image(url = "https://i.postimg.cc/4NXdnq89/1v1battle3.jpg")
+            await battleChannel.send(embed=embed, view = view)
+
+            await asyncio.sleep(30)
+
+            await autofillForAbsentPlayers()
+
+            await heroesAttackFunc(battleChannel)
+            
+            outcomeString = ''
+            participantIds = await getAllParticipantIds()
+            for id in participantIds:
+                memberName = await getParticipantValue(id, 'memberName')
+                heroName = await getParticipantValue(id, 'heroName')
+                heroClass = await getParticipantValue(id, 'heroClass')
+                health = await getParticipantValue(id, 'health')
+                if int(health) <= 0:
+                    outcomeString = outcomeString + f"`💀 {memberName} | {heroName} - Health: {health}`\n"
+                if int(health) > 0:
+                    outcomeString = outcomeString + f"`❤️ {memberName} | {heroName} - Health: {health}`\n"
+            embed = discord.Embed(title=f"Round {roundNumber} Outcome",description=outcomeString, color=colorBlack)
+            embed.set_image(url = "https://i.postimg.cc/PxBxFK0n/wounded-knight.jpg")
+            await battleChannel.send(embed=embed)
+
+            await asyncio.sleep(10)
+
+            numberOfRemainingPlayers = int(await getNumberOfRemainingPlayers())
+            if numberOfRemainingPlayers == 1:
+                heroName, memberName, memberId, heroImage = await getRemainingPlayer()
+                knightWins = await getServerDictValue('knightWins')
+                knightTournamentWins = await getServerDictValue('knightTournamentWins')
+                druidWins = await getServerDictValue('druidWins')
+                druidTournamentWins = await getServerDictValue('druidTournamentWins')
+                isTournamentActive = await getServerDictValue('isTournamentActive')
+                tournamentName = await getServerDictValue('tournamentName')
+
+
+                if 'Druid' in str(heroName):
+                    clan = '`Druids!`'
+                    druidWins = int(druidWins) + 1
+                    await setServerDictValue('druidWins', str(druidWins))
+                    if isTournamentActive == 'true':
+                        druidTournamentWins = int(druidTournamentWins) + 1
+                        await setServerDictValue('druidTournamentWins', str(druidTournamentWins))
+                        
+                if 'Knight' in str(heroName):
+                    clan = '`Knights!`'
+                    knightWins = await getServerDictValue('knightWins')
+                    knightWins = int(knightWins) + 1
+                    await setServerDictValue('knightWins', str(knightWins))
+                    if isTournamentActive == 'true':
+                        knightTournamentWins = int(knightTournamentWins) + 1
+                        await setServerDictValue('knightTournamentWins', str(knightTournamentWins))
+
+                wins = await getMemberDictValue(memberId, 'wins')
+                updatedWins = str(int(wins) + 1)
+                await setMemberDictValue(memberId, 'wins', updatedWins)
+                
+                embed = discord.Embed(title=f"{memberName} Stands Victorious!", description=f"`{heroName}` is the last remaining Hero\n\nThis is another victory for the {clan}\n\n", color=colorGold)
+                embed.add_field(name='Knight Victories', value=knightWins, inline=True)
+                embed.add_field(name='Druid Victories', value=druidWins, inline=True)
+                embed.add_field(name=f'{memberName} Victories', value=updatedWins, inline=True)
+                if isTournamentActive == 'true':
+                    embed.add_field(name=f'Knight {tournamentName} Victories', value=knightTournamentWins, inline=True)
+                    embed.add_field(name=f'Druid {tournamentName} Victories', value=druidTournamentWins, inline=True)
+
+                embed.set_image(url = heroImage)
+                await battleChannel.send(embed=embed)
+
+                await resetServerDict()
+                await resetPlayerChoices()
+                return
+            
+            if numberOfRemainingPlayers == 0:
+                embed = discord.Embed(title=f"All heroes have perished", description=f"No one survived the previous Round", color=colorBlack)
+                embed.set_image(url = 'https://i.postimg.cc/P5f5RgmB/empty-battlefield.jpg')
+                await battleChannel.send(embed=embed)
+                await resetServerDict()
+                await resetPlayerChoices()
+                return
+            
+            await resetPlayerChoices()
+            roundNumber = roundNumber + 1
+
+async def getRandomHero():
+
+        walletTypes = ['ethereumWallet', 'polygonWallet']
+        randomWalletType = random.choice(walletTypes)
+        listOfWallets = []
+        listOfMemberIds = []
+
+        f = open("memberAccounts")
+        s = f.read()
+        membersDict = json.loads(s)
+
+        for account in membersDict:
+            if membersDict[account][randomWalletType] == 'false':
+                continue
+            
+            listOfWallets.append(membersDict[account][randomWalletType])
+            listOfMemberIds.append(membersDict[account]['discordId'])
+            listOfMemberIds.append(membersDict[account]['discordName'])
+        
+        randomWallet = random.choice(listOfWallets)
+        if randomWalletType == 'ethereumWallet':
+            walletThings = await getWalletKnights(randomWallet)
+
+        if randomWalletType == 'polygonWallet':
+            walletThings = await getWalletDruids(randomWallet)
+        
+        length = len(walletThings)
+        random_number = random.randint(0, length)
+        
+        memberName = walletThings[random_number]['memberName']
+        memberId = listOfMemberIds[random_number]['memberId']
+        heroName = walletThings[random_number]['heroName']
+
+        return(memberName, memberId, heroName)
 
 
 async def getAllParticipantIds():
@@ -42,7 +202,7 @@ async def getAllParticipantIds():
     return(key_names)
 
 
-async def resetParticipantsDict():
+async def resetServerDict():
 
     f = open("serverDict")
     s = f.read()
@@ -53,22 +213,54 @@ async def resetParticipantsDict():
     with open('serverDict', 'w') as f:
         json.dump(serverDict, f, indent=4)
 
+    await setServerDictValue('battleStartUnix', 'false')
+    await setServerDictValue('battleMessageId', 'false')
+    await setServerDictValue('battleChannelId', 'false')
+    await setServerDictValue('battleInSession', 'false')
+    await setServerDictValue('battleMode', 'false')
+    await setServerDictValue('participantsToStart', 'false')
+    await setServerDictValue('battleSet', 'false')
     
 
 async def updateBattleEmbed(interaction):
 
-    numberOfParticipants = await getServerDictValue('numberOfParticipants')
+    numberOfParticipants = await getAllParticipantIds()
+    numberOfParticipants = str(len(numberOfParticipants))
     battleStartUnix = await getServerDictValue('battleStartUnix')
     timestamp = await unixToTimestamp(battleStartUnix)
+    battleMode = await getServerDictValue('battleMode')
+    participantsToStart = await getServerDictValue('participantsToStart')
+
+
+    if battleMode == 'countdown':
+        embed = discord.Embed(title="",description=f"# A battle has started!\n`{interaction.user.name}` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: {numberOfParticipants}`\n`Round 1 Begins: `"+timestamp, color=colorRed)
     
-    embed = discord.Embed(title="",description=f"# A battle has started!\n`{interaction.user.name }` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\nParticipants: {numberOfParticipants}\nRound 1 Begins: "+timestamp, color=colorRed)
+    if battleMode == 'participants':
+        embed = discord.Embed(title="",description=f"# A battle has started!\n`{interaction.user.name}` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: {numberOfParticipants}/{participantsToStart}`\n`Round 1 Begins when {participantsToStart}/{participantsToStart} participants have joined`", color=colorRed)
+    
+    if battleMode == 'staff':
+        embed = discord.Embed(title="",description=f"# A battle has started!\n`{interaction.user.name}` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: {numberOfParticipants}`\n`Round 1 Begins when staff runs /battle_start`", color=colorRed)
+    
     embed.set_image(url = "https://i.postimg.cc/B6FNRfgk/battlebegins.jpg")
+
     view = discord.ui.View()
     button = views.theButton(label="Join Battle", custom_id='wd421edc13d', style=discord.ButtonStyle.red)
     view.add_item(button)
 
-    battleMessageId = await getServerDictValue('battleMessageId')
-    await interaction.followup.edit_message(message_id = battleMessageId, embed = embed, view = view)
+    battleChannelId = int(await getServerDictValue('battleChannelId'))
+    battleChannel = interaction.client.get_channel(battleChannelId)
+    battleMessageId = int(await getServerDictValue('battleMessageId'))
+    battleMessage = await battleChannel.fetch_message(battleMessageId)
+    await battleMessage.edit(embed = embed, view = view)
+
+
+async def cancelBattleMessage(bot):
+    battleChannelId = int(await getServerDictValue('battleChannelId'))
+    battleChannel = bot.get_channel(battleChannelId)
+    battleMessageId = int(await getServerDictValue('battleMessageId'))
+    battleMessage = await battleChannel.fetch_message(battleMessageId)
+    await battleMessage.edit(view = None)
+
 
 async def isParticipant(interaction):
 
@@ -97,6 +289,21 @@ async def hasRolledForAttack(interaction):
         return(True, attackRoll)
     
 
+
+async def hasRolledForDefence(interaction):
+
+    f = open("serverDict")
+    s = f.read()
+    serverDict = json.loads(s)
+
+    defenceRoll = serverDict['participantsDict'][str(interaction.user.id)]['defenceRoll']
+
+    if defenceRoll == 'false':
+        return(False, defenceRoll)
+    else:
+        return(True, defenceRoll)
+    
+
     
 async def hasSelectedVictim(interaction):
 
@@ -111,13 +318,6 @@ async def hasSelectedVictim(interaction):
     else:
         return(True, victimName)
 
-    
-async def increaseNumberOfParticipants():
-    numberOfParticipants = await getServerDictValue('numberOfParticipants')
-    newNumberOfParticipants = int(numberOfParticipants) + 1
-    await setServerDictValue('numberOfParticipants', str(newNumberOfParticipants))
-
-
 
 async def resetPlayerChoices():
 
@@ -129,6 +329,7 @@ async def resetPlayerChoices():
 
     for participant in participants:
         participants[str(participant)]['attackRoll'] = 'false'
+        participants[str(participant)]['defenceRoll'] = 'false'
         participants[str(participant)]['victimName'] = 'false'
         
     with open('serverDict', 'w') as f:
@@ -146,8 +347,13 @@ async def autofillForAbsentPlayers():
         
         attackRoll = participants[str(participant)]['attackRoll']
         if attackRoll == 'false':
-            random_number = random.randint(0, 20)
+            random_number = random.randint(0, 100)
             participants[str(participant)]['attackRoll'] = random_number
+
+        defenceRoll = participants[str(participant)]['defenceRoll']
+        if defenceRoll == 'false':
+            random_number = random.randint(0, 100)
+            participants[str(participant)]['defenceRoll'] = random_number
 
         victimName = participants[str(participant)]['victimName']
         if victimName == 'false':
@@ -161,7 +367,7 @@ async def autofillForAbsentPlayers():
         json.dump(serverDict, f, indent=4)
         
 
-async def heroesAttackFunc(interaction):
+async def heroesAttackFunc(channel):
 
     f = open("serverDict")
     s = f.read()
@@ -180,15 +386,16 @@ async def heroesAttackFunc(interaction):
         heroImage = participants[str(key)]['heroImage']
         memberName = participants[str(key)]['memberName']
         attackRoll = participants[str(key)]['attackRoll']
+        defenceRoll = participants[str(key)]['defenceRoll']
         victimName = participants[str(key)]['victimName']
         victimId = await getIdFromName(victimName)
         heroAttack = participants[str(key)]['heroAttack']
         weapon1 = participants[str(key)]['weapon1']
         weapon2 = participants[str(key)]['weapon2']
         weapons = []
-        if weapon1 != 'None':
+        if 'None' not in str(weapon1):
             weapons.append(weapon1)
-        if weapon2 != 'None':
+        if 'None' not in str(weapon2):
             weapons.append(weapon2)
         if len(weapons) == 0:
             weapons.append('Fist')
@@ -197,19 +404,20 @@ async def heroesAttackFunc(interaction):
             weapons.append('Big toe')
         randomWeapon = random.choice(weapons)
 
-        attackPhrases = ['lands a blow on', 'swiftly slices', 'batters', 'executes a flurry of blows on', 'hammers down on', 'slashes', 'sweeps', 'blazes', 'tranquilizes', 'launches an attack on', 'stuns', 'brutalizes', 'concusses', 'impales', 'erupts onto', 'agressively strikes']
+        attackPhrases = ['lands a blow on', 'swiftly slices', 'batters', 'executes a flurry of blows on', 'hammers down on', 'slashes', 'sweeps', 'blazes', 'tranquilizes', 'launches an attack on', 'stuns', 'brutalizes', 'concusses', 'impales', 'erupts onto', 'aggressively strikes']
         randomAttackPhrase = random.choice(attackPhrases)
 
         victimImage = await getParticipantValue(victimId, 'heroImage')
         victimHealth = await getParticipantValue(victimId, 'health')
         victimHeroDefence = await getParticipantValue(victimId, 'heroDefence')
+        victimDefenceRoll = await getParticipantValue(victimId, 'defenceRoll')
         victimHeroName = await getParticipantValue(victimId, 'heroName')
         victimWeapon1 = await getParticipantValue(victimId, 'weapon1')
         victimWeapon2 = await getParticipantValue(victimId, 'weapon2')
         victimWeapons = []
-        if victimWeapon1 != None:
+        if 'None' not in str(victimWeapon1):
             victimWeapons.append(victimWeapon1)
-        if victimWeapon2 != None:
+        if 'None' not in str(victimWeapon2):
             victimWeapons.append(victimWeapon2)
         if len(victimWeapons) == 0:
             victimWeapons.append('Fist')
@@ -224,22 +432,23 @@ async def heroesAttackFunc(interaction):
         if int(victimHealth) <= 0:
             alreadyDeadEmbed = discord.Embed(title=f"{memberName} attacks {victimName}", description=f"..but {victimName} is already dead..`", color=colorBlack)
             alreadyDeadEmbed.set_thumbnail(url = heroImage)
-            await interaction.followup.send(embed=alreadyDeadEmbed, ephemeral = False)
+            await channel.send(embed=alreadyDeadEmbed)
             await asyncio.sleep(7)
             continue
     
         totalAttack = int(attackRoll) + int(heroAttack)
-        attackEmbed = discord.Embed(title=f"{memberName} Attacks {victimName}", description=f"`{heroName}` {randomAttackPhrase} `{victimHeroName}` with their `{randomWeapon}`\n\n`Attack Roll: {attackRoll}`\n`{heroName} Attack: {heroAttack}`\n`Total Attack Damage: {str(totalAttack)}`", color=colorRed)
+        attackEmbed = discord.Embed(title=f"{memberName} Attacks {victimName}", description=f"`{heroName}` {randomAttackPhrase} `{victimHeroName}` with their `{randomWeapon}`\n\n`Attack Roll: {attackRoll}`\n`{heroName} Attack: {heroAttack}`\n`Total Attack: {str(totalAttack)}`", color=colorRed)
         attackEmbed.set_thumbnail(url = heroImage)
-        await interaction.followup.send(embed=attackEmbed, ephemeral = False)
+        await channel.send(embed=attackEmbed)
         await asyncio.sleep(7)
-                
-        defenceEmbed = discord.Embed(title=f"{victimName} Defends", description=f"`{victimName}` {randomDefencePhrase} defends with their `{randomVictimWeapon}`\n\n`{victimHeroName} Defence: {victimHeroDefence}`\n`Total Defence: {str(victimHeroDefence)}`", color=colorCyan)
+
+        totalDefence = int(victimDefenceRoll) + int(victimHeroDefence)  
+        defenceEmbed = discord.Embed(title=f"{victimName} Defends", description=f"`{victimName}` {randomDefencePhrase} defends with their `{randomVictimWeapon}`\n\n`Defence Roll: {victimDefenceRoll}`\n`{victimHeroName} Defence: {victimHeroDefence}`\n`Total Defence: {str(totalDefence)}`", color=colorCyan)
         defenceEmbed.set_thumbnail(url = victimImage)
-        await interaction.followup.send(embed=defenceEmbed, ephemeral = False)
+        await channel.send(embed=defenceEmbed)
         await asyncio.sleep(7)
         
-        damageReceived = totalAttack - int(victimHeroDefence)
+        damageReceived = totalAttack - totalDefence
         if damageReceived < 0:
             damageReceived = 0
 
@@ -253,7 +462,7 @@ async def heroesAttackFunc(interaction):
             
         outcomeEmbed = discord.Embed(title=f"{victimName} {outcomeWord}", description=f"`{victimHeroName} Post conflict:`\n\n`Total Damage Received: {damageReceived}`\n`Remaining Health: {updatedVictimHealth}`", color=outcomeColor)
         outcomeEmbed.set_thumbnail(url = victimImage)
-        await interaction.followup.send(embed=outcomeEmbed, ephemeral = False)
+        await channel.send(embed=outcomeEmbed)
         await asyncio.sleep(7)
 
         await setParticipantValue(victimId, 'health', str(updatedVictimHealth))
@@ -261,81 +470,46 @@ async def heroesAttackFunc(interaction):
     return
         
 
-        
 
-
-async def newParticipant(interaction, heroName):
+async def newParticipant(memberName, memberId, heroName):
 
     f = open("serverDict")
     s = f.read()
     serverDict = json.loads(s)
 
     try:
-        serverDict['participantsDict'][str(interaction.user.id)]
+        serverDict['participantsDict'][str(memberId)]
         return(True)
     except:
-        heroData = await getHeroData(heroName, interaction.user.id)
+        heroData = await getHeroData(heroName, memberId)
          
-        serverDict['participantsDict'][str(interaction.user.id)] = {}
-        serverDict['participantsDict'][str(interaction.user.id)]['attackRoll'] = 'false'
-        serverDict['participantsDict'][str(interaction.user.id)]['victimName'] = 'false'
-        serverDict['participantsDict'][str(interaction.user.id)]['health'] = '100'
-        serverDict['participantsDict'][str(interaction.user.id)]['memberName'] = str(interaction.user.name)
-        serverDict['participantsDict'][str(interaction.user.id)]['memberId'] = str(interaction.user.id)
-        serverDict['participantsDict'][str(interaction.user.id)]['heroName'] = heroName
-        serverDict['participantsDict'][str(interaction.user.id)]['heroAttack'] = heroData['attack']
-        serverDict['participantsDict'][str(interaction.user.id)]['heroDefence'] = heroData['defence']
-        serverDict['participantsDict'][str(interaction.user.id)]['heroImage'] = heroData['image']
+        serverDict['participantsDict'][str(memberId)] = {}
+        serverDict['participantsDict'][str(memberId)]['attackRoll'] = 'false'
+        serverDict['participantsDict'][str(memberId)]['defenceRoll'] = 'false'
+        serverDict['participantsDict'][str(memberId)]['victimName'] = 'false'
+        serverDict['participantsDict'][str(memberId)]['health'] = '100'
+        serverDict['participantsDict'][str(memberId)]['memberName'] = str(memberName)
+        serverDict['participantsDict'][str(memberId)]['memberId'] = str(memberId)
+        serverDict['participantsDict'][str(memberId)]['heroName'] = heroName
+        serverDict['participantsDict'][str(memberId)]['heroAttack'] = heroData['attack']
+        serverDict['participantsDict'][str(memberId)]['heroDefence'] = heroData['defence']
+        serverDict['participantsDict'][str(memberId)]['heroImage'] = heroData['image']
 
         if 'Knight' in heroName:
-            serverDict['participantsDict'][str(interaction.user.id)]['heroClass'] = 'knight'
-            serverDict['participantsDict'][str(interaction.user.id)]['weapon1'] = heroData['leftScabbard']
-            serverDict['participantsDict'][str(interaction.user.id)]['weapon2'] = heroData['rightScabbard']
+            serverDict['participantsDict'][str(memberId)]['heroClass'] = 'knight'
+            serverDict['participantsDict'][str(memberId)]['weapon1'] = heroData['leftScabbard']
+            serverDict['participantsDict'][str(memberId)]['weapon2'] = heroData['rightScabbard']
 
         if 'Druid' in heroName:
-            serverDict['participantsDict'][str(interaction.user.id)]['heroClass'] = 'druid'
-            serverDict['participantsDict'][str(interaction.user.id)]['weapon1'] = heroData['staff']
-            serverDict['participantsDict'][str(interaction.user.id)]['weapon2'] = heroData['weapon']
+            serverDict['participantsDict'][str(memberId)]['heroClass'] = 'druid'
+            serverDict['participantsDict'][str(memberId)]['weapon1'] = heroData['staff']
+            serverDict['participantsDict'][str(memberId)]['weapon2'] = heroData['weapon']
 
 
         with open('serverDict', 'w') as f:
             json.dump(serverDict, f, indent=4)
 
         return(False)
-
-
-async def setParticipantDictValue(interaction, heroName):
-
-    f = open("serverDict")
-    s = f.read()
-    serverDict = json.loads(s)
-
-    try:
-        serverDict['participantsDict'][str(interaction.user.id)]
-        return
-    except:
-        heroData = await getHeroData(heroName, interaction.user.id)
-         
-        serverDict['participantsDict'][str(interaction.user.id)] = {}
-        serverDict['participantsDict'][str(interaction.user.id)]['attackRoll'] = 'false'
-        serverDict['participantsDict'][str(interaction.user.id)]['victimName'] = 'false'
-        serverDict['participantsDict'][str(interaction.user.id)]['health'] = '100'
-        serverDict['participantsDict'][str(interaction.user.id)]['memberName'] = str(interaction.user.name)
-        serverDict['participantsDict'][str(interaction.user.id)]['heroName'] = heroName
-        serverDict['participantsDict'][str(interaction.user.id)]['heroAttack'] = heroData['attack']
-        serverDict['participantsDict'][str(interaction.user.id)]['heroDefence'] = heroData['defence']
-
-        if 'Knight' in heroName:
-            serverDict['participantsDict'][str(interaction.user.id)]['weapon1'] = heroData['leftScabbard']
-            serverDict['participantsDict'][str(interaction.user.id)]['weapon2'] = heroData['rightScabbard']
-
-        if 'Druid' in heroName:
-            serverDict['participantsDict'][str(interaction.user.id)]['weapon1'] = heroData['staff']
-            serverDict['participantsDict'][str(interaction.user.id)]['weapon2'] = heroData['weapon']
-
-
-        with open('serverDict', 'w') as f:
-            json.dump(serverDict, f, indent=4)
 
 
 async def isParticipant(interaction):
@@ -373,7 +547,6 @@ async def getHeroData(heroName, memberId):
     if 'Druid' in heroName:
         walletDruids = await getWalletDruids(polygonWallet)
         heroData = next((v for v in walletDruids.values() if v['name'] == heroName), None)
-    print(heroData)
     return(heroData)
     
 
@@ -751,26 +924,6 @@ async def getGamesOptions():
     return(options)
 
 
-async def getContestParticipants(guild):
-
-    role_name = "Participant"
-    participants = []
-    participantRole = discord.utils.get(guild.roles, name="Participant")
-
-    for member in participantRole.members:
-        participants.append(member.name)
-
-    random.shuffle(participants)
-
-    return(participants)
-
-    
-
-
-async def getNumberOfContestParticipants(guild):
-
-    numberOfParticipants = str(len(await getContestParticipants(guild)))
-    return(numberOfParticipants)
 
 
 async def getNowUnix():
@@ -782,25 +935,14 @@ async def unixToTimestamp(unix):
         timestamp = '<t:'+str(unix)+':R>'
         return(timestamp)
 
-
-async def wipeRumbleRoyaleDictionary(guildId):
+async def isStaff(memberId):
     
-    f = open("serverAccounts.txt")
-    s = f.read()
-    serversDict = json.loads(s)
-
-    for account in serversDict:
-        if str(guildId) == str(serversDict[account]['serverId']):
-            serversDict[str(account)]['rumbleRoyale']['participants'] = []
-            serversDict[str(account)]['rumbleRoyale']['votes'] = []
-            serversDict[str(account)]['rumbleRoyale']['hasVoted'] = []
-            serversDict[str(account)]['rumbleRoyale']['majorityVote'] = 'False'
-            serversDict[str(account)]['rumbleRoyale']['hasEnded'] = 'True'
-
-        
-
-    with open('serverAccounts.txt', 'w') as f:
-        json.dump(serversDict, f, indent=4)
+    staffList = await getServerDictValue('staff')
+    if str(memberId) in staffList or str(memberId) == '903781746611462214' or str(memberId) == '433648637763911680' or str(memberId) == '960601733556482108':
+       return('true', 'true')
+    else:
+        embed = discord.Embed(title="",description=f"Only staff members can use that command", color=colorBlack)
+        return('false', embed)
 
 
 
@@ -900,6 +1042,7 @@ async def newMemberFunc(memberId, memberName):
     except:
         membersDict[str(memberId)] = {}
         membersDict[str(memberId)]['discordName'] = str(memberName)
+        membersDict[str(memberId)]['discordId'] = str(memberId)
         membersDict[str(memberId)]['wins'] = '0'
         membersDict[str(memberId)]['losses'] = '0'
         membersDict[str(memberId)]['polygonWallet'] = 'false'

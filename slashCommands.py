@@ -28,6 +28,91 @@ def slashCommands(tree):
     colorWhite = discord.Colour.from_str('#FFFFFF')
     colorPink = discord.Colour.from_str('#ffc0d6')
     colorGold = discord.Colour.from_str('#FDD835')
+
+    @tree.command(name='add_staff', description='Add member to staff')
+    async def add_staff(interaction: discord.Interaction, member: discord.Member):
+            
+        await interaction.response.defer(ephemeral=True)
+        
+        isStaff, embed = await botFunctions.isStaff(interaction.user.id)
+        if isStaff == 'false':
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+    
+        staffList = await botFunctions.getServerDictValue('staff')
+        staffList.append(str(member.id))
+        await botFunctions.setServerDictValue('staff', staffList)
+        memberName = '<@' + str(member.id) + '>'
+        embed = discord.Embed(title="",description=f"Successfully added {memberName} to Staff", color=colorGreen)
+        await interaction.followup.send(embed=embed, ephemeral = True)
+
+    @tree.command(name='remove_staff', description='Remove member of staff')
+    async def remove_staff(interaction: discord.Interaction, member: discord.Member):
+        
+        await interaction.response.defer(ephemeral=True)
+        
+        isStaff, embed = await botFunctions.isStaff(interaction.user.id)
+        if isStaff == 'false':
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+        
+        staffList = await botFunctions.getServerDictValue('staff')
+        staffList.remove(str(member.id))
+        await botFunctions.setServerDictValue('staff', staffList)
+        memberName = '<@' + str(member.id) + '>'
+        embed = discord.Embed(title="",description=f"Successfully removed {memberName} from Staff", color=colorGreen)
+        await interaction.followup.send(embed=embed, ephemeral = True)
+
+    @tree.command(name='list_staff', description='List staff members')
+    async def list_staff(interaction: discord.Interaction):
+
+        await interaction.response.defer(ephemeral=True)
+
+        staffList = await botFunctions.getServerDictValue('staff')
+        string = ''
+        for memberId in staffList:
+            memberName = '<@' + str(memberId) + '>'
+            string = string + memberName + '\n'
+
+        embed = discord.Embed(title="Staff List:",description=string, color=colorCyan)
+        embed.set_thumbnail(url = "https://i.postimg.cc/bNF5ZpZs/staff.png")
+        await interaction.followup.send(embed=embed, ephemeral = True)
+
+
+    @tree.command(name='set_tournament', description='Set a new Tournament (Wipes previous tournament wins)')
+    async def set_tournament(interaction: discord.Interaction, tournament_name: str):
+
+        await interaction.response.defer(ephemeral=True)
+
+        isStaff, embed = await botFunctions.isStaff(interaction.user.id)
+        if isStaff == 'false':
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+
+        await botFunctions.setServerDictValue('druidTournamentWins', '0')
+        await botFunctions.setServerDictValue('knightTournamentWins', '0')
+        await botFunctions.setServerDictValue('isTournamentActive', 'true')
+        await botFunctions.setServerDictValue('tournamentName', tournament_name)
+        embed = discord.Embed(title="",description=f"Successfully Set Tournament", color=colorGreen)
+        await interaction.followup.send(embed=embed, ephemeral = True)
+
+
+    @tree.command(name='disable_tournament', description='Disable Tournament (Wipes tournament wins)')
+    async def disable_tournament(interaction: discord.Interaction):
+        
+        await interaction.response.defer(ephemeral=True)
+
+        isStaff, embed = await botFunctions.isStaff(interaction.user.id)
+        if isStaff == 'false':
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+        
+        await botFunctions.setServerDictValue('druidTournamentWins', '0')
+        await botFunctions.setServerDictValue('knightTournamentWins', '0')
+        await botFunctions.setServerDictValue('isTournamentActive', 'false')
+        await botFunctions.setServerDictValue('tournamentName', 'false')
+        embed = discord.Embed(title="",description=f"Successfully Disabled Tournament", color=colorGreen)
+        await interaction.followup.send(embed=embed, ephemeral = True)
     
 
     @tree.command(name='connect_wallets', description='Connect your Wallets for PVP')
@@ -54,7 +139,7 @@ def slashCommands(tree):
             await botFunctions.setMemberDictValue(interaction.user.id, 'polygonWallet', polygon)
             data = await botFunctions.getWalletDruids(polygon)
             amountOfDruids = str(len(data))
-            embed = discord.Embed(title='We detected '+amountOfDruids+' Druids in your wallet',description='Use `/my_heroes` to see your heroes', color=colorGreen)
+            embed = discord.Embed(description='We detected '+amountOfDruids+' Druids in your wallet', color=colorGreen)
             await interaction.followup.send(embed=embed, ephemeral = True)
         
         if ethereum != None:
@@ -70,21 +155,56 @@ def slashCommands(tree):
             await botFunctions.setMemberDictValue(interaction.user.id, 'ethereumWallet', ethereum)
             data = await botFunctions.getWalletKnights(ethereum)
             amountOfKnights = str(len(data))
-            embed = discord.Embed(title='We detected '+amountOfKnights+' Knights in your wallet',description='Use `/my_heroes` to see your heroes', color=colorGreen)
+            embed = discord.Embed(description='We detected '+amountOfKnights+' Knights in your wallet', color=colorGreen)
             await interaction.followup.send(embed=embed, ephemeral = True)
 
-    
-    # @tree.command(name='my_heroes', description='Connect your Wallets for PVP')
-    # async def connect_wallets(interaction: discord.Interaction, polygon: str = None, ethereum: str = None):
+
+
+    @tree.command(name='cancel_battle', description='Cancel the current battle')
+    async def cancel_battle(interaction: discord.Interaction):
         
-    #     await interaction.response.defer(ephemeral=True)
-    #     await botFunctions.newMemberFunc(str(interaction.user.id), str(interaction.user.name))
+        await interaction.response.defer(ephemeral=True)
+
+        isStaff, embed = await botFunctions.isStaff(interaction.user.id)
+        if isStaff == 'false':
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+
+        battleInSession = await botFunctions.getServerDictValue('battleInSession')
+        if battleInSession == 'false':
+            embed = discord.Embed(title='',description='There is no active battle', color=colorBlack)
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+
+        battleChannelId = int(await botFunctions.getServerDictValue('battleChannelId'))
+        battleChannel = interaction.client.get_channel(battleChannelId)
+        
+
+        await botFunctions.cancelBattleMessage(interaction.client)
+
+        await botFunctions.resetPlayerChoices()
+        await botFunctions.resetServerDict()
+        
+        embed = discord.Embed(title="Battle Cancelled", description="`/cancel_battle` was used", color=colorBlack)
+        embed.set_image(url = "https://i.postimg.cc/wMJQnydT/fotor-ai-20240403211513.jpg")
+        await battleChannel.send(embed = embed)
+
+        embed = discord.Embed(title="", description="Battle cancelled successfully", color=colorGreen)
+        await interaction.followup.send(embed=embed, ephemeral = True)
+
 
     
-    @tree.command(name='battle', description='Begin a countdown battle!')
-    async def connect_wallets(interaction: discord.Interaction, minutes_to_start: int):
+    @tree.command(name='battle', description='Battle begins when countdown ends')
+    async def battle(interaction: discord.Interaction, minutes_to_start: int):
         
-        await interaction.response.defer(ephemeral=False)
+        await interaction.response.defer(ephemeral=True)
+
+        battleInSession = await botFunctions.getServerDictValue('battleInSession')
+        if battleInSession == 'true':
+            embed = discord.Embed(title="",description="A battle has already started", color=colorBlack)
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+            
         await botFunctions.newMemberFunc(str(interaction.user.id), str(interaction.user.name))
 
         nowUnix = await botFunctions.getNowUnix()
@@ -96,91 +216,152 @@ def slashCommands(tree):
         dict = {}
         dict[interaction.user.id] = {}
 
-        embed = discord.Embed(title="",description="# A battle has started!\n`"+interaction.user.name + "` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\nParticipants: 0\nRound 1 Begins: "+timestamp, color=colorRed)
+        embed = discord.Embed(title="",description="# A battle has started!\n`"+interaction.user.name + "` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: 0`\n`Round 1 Begins: `"+timestamp, color=colorRed)
         embed.set_image(url = "https://i.postimg.cc/B6FNRfgk/battlebegins.jpg")
 
         view = discord.ui.View()
         button = views.theButton(label="Join Battle", custom_id='wd421edc13d', style=discord.ButtonStyle.red)
         view.add_item(button)
 
-        message = await interaction.followup.send(embed=embed, view = view, ephemeral = False)
+        message = await interaction.channel.send(embed=embed, view = view)
         await botFunctions.setServerDictValue('battleMessageId', str(message.id))
+        await botFunctions.setServerDictValue('battleChannelId', str(message.channel.id))
+        await botFunctions.setServerDictValue('battleInSession', 'true')
+        await botFunctions.setServerDictValue('battleMode', 'countdown')
        
         await asyncio.sleep(secondsToStart)
 
         numberOfRemainingPlayers = int(await botFunctions.getNumberOfRemainingPlayers())
         if numberOfRemainingPlayers < 2:
             embed = discord.Embed(title="Battle Cancelled", description="Not enough heroes joined", color=colorBlack)
+            embed.set_image(url = "https://i.postimg.cc/wMJQnydT/fotor-ai-20240403211513.jpg")
+            await botFunctions.setServerDictValue('battleInSession', 'false')
             await interaction.followup.send(embed=embed, ephemeral = False)
+            await botFunctions.cancelBattleMessage(interaction.client)
+            return
+        
+        await botFunctions.startBattle(interaction.client)
+
+
+
+    @tree.command(name='battle_participants', description='Battle begins when participants reached')
+    async def battle_participants(interaction: discord.Interaction, participants_to_start: int):
+        
+        await interaction.response.defer(ephemeral=True)
+
+        isStaff, embed = await botFunctions.isStaff(interaction.user.id)
+        if isStaff == 'false':
+            await interaction.followup.send(embed=embed, ephemeral = True)
             return
 
+        battleInSession = await botFunctions.getServerDictValue('battleInSession')
+        if battleInSession == 'true':
+            embed = discord.Embed(title="", description="A battle has already started", color=colorBlack)
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+        
+        if participants_to_start < 2:
+            embed = discord.Embed(title="", description="Must be at least 2 participants", color=colorBlack)
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+
+        embed = discord.Embed(title="",description=f"# A battle has started!\n`{interaction.user.name}` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: 0/{str(participants_to_start)}`\n`Round 1 Begins when {str(participants_to_start)}/{str(participants_to_start)} participants have joined`", color=colorRed)
+        embed.set_image(url = "https://i.postimg.cc/B6FNRfgk/battlebegins.jpg")
+
         view = discord.ui.View()
-        button = views.theButton(label="Roll For Attack", custom_id='awdg423d', style=discord.ButtonStyle.red)
+        button = views.theButton(label="Join Battle", custom_id='wd421edc13d', style=discord.ButtonStyle.red)
         view.add_item(button)
 
-        options = await botFunctions.getVictimOptions()
-        select = views.victimSelect(options=options)
-        view.add_item(select)
+        message = await interaction.channel.send(embed=embed, view = view)
 
-        roundNumber = 1
-        while numberOfRemainingPlayers >= 2:
-            
-            nowUnix = await botFunctions.getNowUnix()
-            end = nowUnix + 30
-            timestamp = await botFunctions.unixToTimestamp(end)
-
-            embed = discord.Embed(title=f"Round {roundNumber}", description=f"`Time left:` {timestamp}", color=colorRed)
-            embed.set_image(url = "https://i.postimg.cc/XNh88KDn/1v1battle3.jpg")
-            await interaction.followup.send(embed=embed, view = view, ephemeral = False)
-
-            await asyncio.sleep(30)
-
-            await botFunctions.autofillForAbsentPlayers()
-
-            await botFunctions.heroesAttackFunc(interaction)
-            
-            outcomeString = ''
-            participantIds = await botFunctions.getAllParticipantIds()
-            for id in participantIds:
-                memberName = await botFunctions.getParticipantValue(id, 'memberName')
-                heroName = await botFunctions.getParticipantValue(id, 'heroName')
-                heroClass = await botFunctions.getParticipantValue(id, 'heroClass')
-                health = await botFunctions.getParticipantValue(id, 'health')
-                if int(health) <= 0:
-                    outcomeString = outcomeString + f"`💀 {memberName} | {heroName} - Health: {health}`\n"
-                if int(health) > 0:
-                    outcomeString = outcomeString + f"`❤️ {memberName} | {heroName} - Health: {health}`\n"
-            embed = discord.Embed(title=f"Round {roundNumber} Outcome",description=outcomeString, color=colorBlack)
-            embed.set_image(url = "https://i.postimg.cc/PxBxFK0n/wounded-knight.jpg")
-            await interaction.followup.send(embed=embed, ephemeral = False)
-
-            await asyncio.sleep(10)
-
-            numberOfRemainingPlayers = int(await botFunctions.getNumberOfRemainingPlayers())
-            if numberOfRemainingPlayers == 1:
-                heroName, memberName, memberId, heroImage = await botFunctions.getRemainingPlayer()
-                embed = discord.Embed(title=f"{memberName} Stands Victorious!", description=f"`{heroName}` is the last remaining Hero", color=colorGold)
-                embed.set_image(url = heroImage)
-                await interaction.followup.send(embed=embed, ephemeral = False)
-
-                wins = await botFunctions.getMemberDictValue(memberId, 'wins')
-                updatedWins = str(int(wins) + 1)
-                await botFunctions.setMemberDictValue(interaction.user.id, 'wins', updatedWins)
-                return
-            
-            if numberOfRemainingPlayers == 0:
-                embed = discord.Embed(title=f"All heroes have perished", description=f"No one survived the previous Round", color=colorBlack)
-                embed.set_image(url = 'https://i.postimg.cc/P5f5RgmB/empty-battlefield.jpg')
-                await interaction.followup.send(embed=embed, view = view, ephemeral = False)
-
-                wins = await botFunctions.getMemberDictValue(memberId, 'wins')
-                updatedWins = str(int(wins) + 1)
-                await botFunctions.setMemberDictValue(interaction.user.id, 'wins', updatedWins)
-                return
+        await botFunctions.setServerDictValue('battleMessageId', str(message.id))
+        await botFunctions.setServerDictValue('battleChannelId', str(message.channel.id))
+        await botFunctions.setServerDictValue('battleInSession', 'true')
+        await botFunctions.setServerDictValue('battleMode', 'participants')
+        await botFunctions.setServerDictValue('participantsToStart', str(participants_to_start))
 
 
-            await botFunctions.resetPlayerChoices()
-            roundNumber = roundNumber + 1
+
+    @tree.command(name='battle_set', description='Battle begins with /battle_start')
+    async def battle_set(interaction: discord.Interaction):
+        
+        await interaction.response.defer(ephemeral=True)
+
+        isStaff, embed = await botFunctions.isStaff(interaction.user.id)
+        if isStaff == 'false':
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+
+        battleInSession = await botFunctions.getServerDictValue('battleInSession')
+        if battleInSession == 'true':
+            embed = discord.Embed(title="", description="A battle has already started", color=colorBlack)
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+
+        numberOfParticipants = await botFunctions.getAllParticipantIds()
+        numberOfParticipants = str(len(numberOfParticipants))
+        embed = discord.Embed(title="",description=f"# A battle has started!\n`{interaction.user.name}` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: {numberOfParticipants}`\n`Round 1 Begins when staff runs /battle_start`", color=colorRed)
+        embed.set_image(url = "https://i.postimg.cc/B6FNRfgk/battlebegins.jpg")
+
+        view = discord.ui.View()
+        button = views.theButton(label="Join Battle", custom_id='wd421edc13d', style=discord.ButtonStyle.red)
+        view.add_item(button)
+
+        message = await interaction.channel.send(embed=embed, view = view)
+
+        await botFunctions.setServerDictValue('battleMessageId', str(message.id))
+        await botFunctions.setServerDictValue('battleChannelId', str(message.channel.id))
+        await botFunctions.setServerDictValue('battleInSession', 'true')
+        await botFunctions.setServerDictValue('battleMode', 'staff')
+        await botFunctions.setServerDictValue('battleSet', 'true')
+        
+
+    @tree.command(name='battle_start', description='Start a set battle')
+    async def battle_start(interaction: discord.Interaction):
+        
+        await interaction.response.defer(ephemeral=True)
+
+        isStaff, embed = await botFunctions.isStaff(interaction.user.id)
+        if isStaff == 'false':
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+
+        battleSet = await botFunctions.getServerDictValue('battleSet')
+        if battleSet == 'false':
+            embed = discord.Embed(title="", description="There is no set battle to start", color=colorBlack)
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+        
+        numberOfParticipants = await botFunctions.getAllParticipantIds()
+        numberOfParticipants = len(numberOfParticipants)
+        if numberOfParticipants < 2:
+            embed = discord.Embed(title="", description="There must be at least 2 players to start", color=colorBlack)
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+        
+        embed = discord.Embed(title="", description="Battle has been started", color=colorGreen)
+        await interaction.followup.send(embed=embed, ephemeral = True)
+        
+        await botFunctions.startBattle(interaction.client)
 
 
-        await botFunctions.resetParticipantsDict()
+
+    @tree.command(name='battle_ghost', description='Battle the ghost of a random members knight/druid')
+    async def battle_ghost(interaction: discord.Interaction):
+        
+        await interaction.response.defer(ephemeral=False)
+
+        memberName, memberId, heroName = await botFunctions.getRandomHero()
+        isAlreadyParticipant = await botFunctions.newParticipant(memberName, memberId, heroName)
+
+        embed = discord.Embed(title="",description=f"You have challenged the ghost of {memberName}\n`## Rules:\nAt the start of every Round, you are required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Round 1 Begins shortly..`", color=colorCyan)
+        embed.set_image(url = "https://i.postimg.cc/rp6R5wWV/ghost.jpg")
+        await interaction.followup.send(embed=embed)
+
+        await asyncio.sleep(10)
+
+        await botFunctions.setServerDictValue('battleChannelId', str(interaction.channel.id))
+        await botFunctions.setServerDictValue('battleInSession', 'true')
+        await botFunctions.setServerDictValue('battleMode', 'ghost')
+
+        await botFunctions.startBattle()

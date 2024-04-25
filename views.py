@@ -53,15 +53,14 @@ class victimSelect(discord.ui.Select):
             await interaction.followup.send(embed=embed, ephemeral = True)
             return
 
-        
         hasSelectedVictim, victimName = await botFunctions.hasSelectedVictim(interaction)
         if hasSelectedVictim == True:
-            embed = discord.Embed(title="",description=f'You have already selected `{victimName}` as a victim', color=colorBlack)
+            embed = discord.Embed(title="",description="You have already selected " + victimName +" as a victim", color=colorBlack)
             await interaction.followup.send(embed=embed, ephemeral = True)
             return
         
         await botFunctions.setParticipantDictValue(interaction, 'victimName', victimName)
-        embed = discord.Embed(title="",description='You have chosen to attack `' + victimName+'`', color=colorRed)
+        embed = discord.Embed(title="",description="You have chosen to attack " + victimName, color=colorRed) #victimeName Doesnt work with ``
         await interaction.followup.send(embed=embed, ephemeral = True)
 
 
@@ -162,13 +161,19 @@ class theButton(discord.ui.Button):
             await interaction.response.defer(ephemeral=True)
 
             heroName = str(self.custom_id)
-            isAlreadyParticipant = await botFunctions.newParticipant(interaction, heroName)
+            isAlreadyParticipant = await botFunctions.newParticipant(interaction.user.name, interaction.user.id, heroName)
             if isAlreadyParticipant == False:
-                await botFunctions.increaseNumberOfParticipants()
                 await botFunctions.updateBattleEmbed(interaction)
             
-            embed = discord.Embed(description=f'You have joined the battle with {heroName}!', color=colorGreen)
+            embed = discord.Embed(description=f'You have joined the battle with `{heroName}`', color=colorGreen)
             await interaction.followup.send(embed=embed, ephemeral = True)
+
+            battleMode = await botFunctions.getServerDictValue('battleMode')
+            participantsToStart = await botFunctions.getServerDictValue('participantsToStart')
+            numberOfParticipants = await botFunctions.getAllParticipantIds()
+            numberOfParticipants = str(len(numberOfParticipants))
+            if battleMode == 'participants' and numberOfParticipants == participantsToStart:
+                await botFunctions.startBattle(interaction.client)
 
         if self.label == "Roll For Attack":
             await interaction.response.defer(ephemeral=True)
@@ -187,13 +192,39 @@ class theButton(discord.ui.Button):
             
             hasRolledForAttack, roll = await botFunctions.hasRolledForAttack(interaction)
             if hasRolledForAttack == True:
-                embed = discord.Embed(title="",description=f'You have already rolled a `{roll}` for attack', color=colorBlack)
+                embed = discord.Embed(title="",description=f'You have already rolled a `{roll}` for Attack', color=colorBlack)
                 await interaction.followup.send(embed=embed, ephemeral = True)
                 return
 
-            random_number = random.randint(0, 20)
+            random_number = random.randint(0, 100)
             await botFunctions.setParticipantDictValue(interaction, 'attackRoll', random_number)
-            embed = discord.Embed(title="",description=f'You have rolled `{random_number}` for attack', color=colorRed)
+            embed = discord.Embed(title="",description=f'You have rolled `{random_number}` for Attack', color=colorRed)
+            await interaction.followup.send(embed=embed, ephemeral = True)
+
+        if self.label == "Roll For Defence":
+            await interaction.response.defer(ephemeral=True)
+
+            isParticipant = await botFunctions.isParticipant(interaction)
+            if isParticipant == False:
+                embed = discord.Embed(title="",description='You are not a participant of this battle', color=colorBlack)
+                await interaction.followup.send(embed=embed, ephemeral = True)
+                return
+            
+            health = await botFunctions.getParticipantValue(interaction.user.id, 'health')
+            if int(health) <= 0:
+                embed = discord.Embed(title="",description="Your Hero is dead", color=colorBlack)
+                await interaction.followup.send(embed=embed, ephemeral = True)
+                return
+            
+            hasRolledForDefence, roll = await botFunctions.hasRolledForDefence(interaction)
+            if hasRolledForDefence == True:
+                embed = discord.Embed(title="",description=f'You have already rolled a `{roll}` for Defence', color=colorBlack)
+                await interaction.followup.send(embed=embed, ephemeral = True)
+                return
+
+            random_number = random.randint(0, 100)
+            await botFunctions.setParticipantDictValue(interaction, 'defenceRoll', random_number)
+            embed = discord.Embed(title="",description=f'You have rolled `{random_number}` for Defence', color=colorCyan)
             await interaction.followup.send(embed=embed, ephemeral = True)
 
 
