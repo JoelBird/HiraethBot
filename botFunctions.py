@@ -28,7 +28,7 @@ colorGold = discord.Colour.from_str('#FDD835')
 async def startBattle(bot):
 
 
-        battleMode = int(await getServerDictValue('battleMode'))
+        battleMode = await getServerDictValue('battleMode')
         if battleMode != 'ghost':
             await cancelBattleMessage(bot)
 
