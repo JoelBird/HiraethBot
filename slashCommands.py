@@ -186,7 +186,7 @@ def slashCommands(tree):
         await botFunctions.resetServerDict()
         
         embed = discord.Embed(title="Battle Cancelled", description="`/cancel_battle` was used", color=colorBlack)
-        embed.set_image(url = "https://i.postimg.cc/wMJQnydT/fotor-ai-20240403211513.jpg")
+        embed.set_thumbnail(url = "https://i.postimg.cc/wMJQnydT/fotor-ai-20240403211513.jpg")
         await battleChannel.send(embed = embed)
 
         embed = discord.Embed(title="", description="Battle cancelled successfully", color=colorGreen)
@@ -234,7 +234,7 @@ def slashCommands(tree):
         numberOfRemainingPlayers = int(await botFunctions.getNumberOfRemainingPlayers())
         if numberOfRemainingPlayers < 2:
             embed = discord.Embed(title="Battle Cancelled", description="Not enough heroes joined", color=colorBlack)
-            embed.set_image(url = "https://i.postimg.cc/wMJQnydT/fotor-ai-20240403211513.jpg")
+            embed.set_thumbnail(url = "https://i.postimg.cc/wMJQnydT/fotor-ai-20240403211513.jpg")
             await botFunctions.setServerDictValue('battleInSession', 'false')
             await interaction.followup.send(embed=embed, ephemeral = False)
             await botFunctions.cancelBattleMessage(interaction.client)

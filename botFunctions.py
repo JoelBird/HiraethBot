@@ -180,9 +180,9 @@ async def getRandomHero():
         length = len(walletThings)
         random_number = random.randint(0, length)
         
-        memberName = walletThings[random_number]['memberName']
-        memberId = listOfMemberIds[random_number]['memberId']
+        memberId = listOfMemberIds[random_number]['discordId']
         heroName = walletThings[random_number]['heroName']
+        memberName = walletThings[random_number]['discordName']
 
         return(memberName, memberId, heroName)
 
