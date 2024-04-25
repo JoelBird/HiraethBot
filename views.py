@@ -53,14 +53,14 @@ class victimSelect(discord.ui.Select):
             await interaction.followup.send(embed=embed, ephemeral = True)
             return
 
-        hasSelectedVictim, victimName = await botFunctions.hasSelectedVictim(interaction)
+        hasSelectedVictim, victimName2 = await botFunctions.hasSelectedVictim(interaction)
         if hasSelectedVictim == True:
-            embed = discord.Embed(title="",description="You have already selected " + victimName +" as a victim", color=colorBlack)
+            embed = discord.Embed(title="",description=f"You have already selected `{victimName2}` as a victim", color=colorBlack)
             await interaction.followup.send(embed=embed, ephemeral = True)
             return
         
         await botFunctions.setParticipantDictValue(interaction, 'victimName', victimName)
-        embed = discord.Embed(title="",description="You have chosen to attack " + victimName, color=colorRed) #victimeName Doesnt work with ``
+        embed = discord.Embed(title="",description=f"You have chosen to attack `{victimName}`", color=colorRed) #victimeName Doesnt work with ``
         await interaction.followup.send(embed=embed, ephemeral = True)
 
 
