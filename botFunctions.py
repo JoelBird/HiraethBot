@@ -9,7 +9,6 @@ import views
 from binance.client import Client
 from web3 import Web3 #was using python 3.11.1 64 bit, got package error, had to uninstall it and install 3.9.11 64 bit for it to work https://www.python.org/downloads/release/python-3911/
 from web3.middleware import geth_poa_middleware
-import modals
 import random
 import pyshorteners
 import re
@@ -27,10 +26,7 @@ colorGold = discord.Colour.from_str('#FDD835')
 
 async def startBattle(bot):
 
-
-        battleMode = await getServerDictValue('battleMode')
-        if battleMode != 'ghost':
-            await cancelBattleMessage(bot)
+        await cancelBattleMessage(bot)
 
         battleChannelId = int(await getServerDictValue('battleChannelId'))
         battleChannel = bot.get_channel(battleChannelId)
@@ -151,7 +147,7 @@ async def startBattle(bot):
             await resetPlayerChoices()
             roundNumber = roundNumber + 1
 
-async def getRandomHero():
+async def getRandomHero(userId):
 
         walletTypes = ['ethereumWallet', 'polygonWallet']
         randomWalletType = random.choice(walletTypes)
@@ -164,7 +160,7 @@ async def getRandomHero():
         membersDict = json.loads(s)
 
         for account in membersDict:
-            if membersDict[account][randomWalletType] == 'false':
+            if membersDict[account][randomWalletType] == 'false' or membersDict[account]['discordId'] == str(userId):
                 continue
             
             listOfWallets.append(membersDict[account][randomWalletType])
@@ -172,22 +168,24 @@ async def getRandomHero():
             listOfMemberNames.append(membersDict[account]['discordName'])
         
         length = len(listOfWallets) - 1
-        print(length)
-        selectedWalletPosition = random.randint(0, length)
-        print(selectedWalletPosition)
-        selectedWallet = listOfWallets[selectedWalletPosition]
-        memberId = listOfMemberIds[selectedWalletPosition]
-        memberName = listOfMemberNames[selectedWalletPosition]
-        
-        if randomWalletType == 'ethereumWallet':
-            walletThings = await getWalletKnights(selectedWallet)
+        numberOfNfts = 0
+        while numberOfNfts < 1:
+            selectedWalletIndex = random.randint(0, length)
+            selectedWallet = listOfWallets[selectedWalletIndex]
+            memberId = listOfMemberIds[selectedWalletIndex]
+            memberName = listOfMemberNames[selectedWalletIndex]
+            
+            if randomWalletType == 'ethereumWallet':
+                walletThings = await getWalletKnights(selectedWallet)
 
-        if randomWalletType == 'polygonWallet':
-            walletThings = await getWalletDruids(selectedWallet)
+            if randomWalletType == 'polygonWallet':
+                walletThings = await getWalletDruids(selectedWallet)
+
+            numberOfNfts = len(walletThings) #Prevent selecting wallet with 0 druids/knights
         
-        length = len(walletThings)
+        length = len(walletThings) - 1
         random_number = random.randint(0, length)
-        heroName = walletThings[random_number]['heroName']
+        heroName = walletThings[random_number]['name']
 
         return(memberName, memberId, heroName)
 
@@ -225,6 +223,9 @@ async def resetServerDict():
     await setServerDictValue('battleMode', 'false')
     await setServerDictValue('participantsToStart', 'false')
     await setServerDictValue('battleSet', 'false')
+    await setServerDictValue('ghostBattleStarterId', 'false')
+    await setServerDictValue('1v1BattleStarterId', 'false')
+    await setServerDictValue('1v1BattleVictimId', 'false')
     
 
 async def updateBattleEmbed(interaction):
@@ -558,33 +559,14 @@ async def getHeroData(heroName, memberId):
 
 async def getWalletKnights(walletAddress):
 
-    f = open("tokens")
-    s = f.read()
-    tokensDict = json.loads(s)
-    api_key = tokensDict["moralis_api_key"]
-
-    params = {
-    "chain": 'eth',
-    "format": "decimal",
-    "media_items": False,
-    "address": walletAddress
-    }
-
-    result = evm_api.nft.get_wallet_nfts(
-    api_key=api_key,
-    params=params,
-    )
-
     contractAddress = '0xD2deFe14811BEC6332C6ae8CcE85a858b3A80B56'
+    filtered_entries = await fetch_nfts(walletAddress, 'eth', contractAddress)
 
-    filtered_entries = [entry for entry in result["result"] if entry["token_address"].lower() == contractAddress.lower()]
     dict = {}
     i = 0
     for entry in filtered_entries:
         # Convert JSON string to dictionary
         metadata = json.loads(filtered_entries[i]['metadata'])
-        #print(data)
-
         attributes = {attr['trait_type']: attr['value'] for attr in metadata['attributes']}
        
         right_scabbard = attributes.get('Right Scabbard', None)
@@ -599,10 +581,10 @@ async def getWalletKnights(walletAddress):
         dict[i] = {}
         dict[i]['leftScabbard'] = left_scabbard
         dict[i]['rightScabbard'] = right_scabbard
-        if attack != None:
+        if attack != None and not isinstance(attack, int):
             attack = ''.join([char for char in attack if char.isdigit()])
         dict[i]['attack'] = attack
-        if defence != None:
+        if attack != None and not isinstance(attack, int):
             defence = ''.join([char for char in defence if char.isdigit()])
         dict[i]['defence'] = defence
         dict[i]['image'] = image
@@ -614,25 +596,8 @@ async def getWalletKnights(walletAddress):
 
 async def getWalletDruids(walletAddress):
 
-    f = open("tokens")
-    s = f.read()
-    tokensDict = json.loads(s)
-    api_key = tokensDict["moralis_api_key"]
-
-    params = {
-    "chain": 'polygon',
-    "format": "decimal",
-    "media_items": False,
-    "address": walletAddress
-    }
-
-    result = evm_api.nft.get_wallet_nfts(
-    api_key=api_key,
-    params=params,
-    )
-
     contractAddress = '0xAe65887F23558699978566664CC7dC0ccd67C0f8'
-    filtered_entries = [entry for entry in result["result"] if entry["token_address"].lower() == contractAddress.lower()]
+    filtered_entries = await fetch_nfts(walletAddress, 'polygon', contractAddress)
     dict = {}
     i = 0
 
@@ -661,9 +626,13 @@ async def getWalletDruids(walletAddress):
         dict[i]['weapon'] = weapon
         if attack != None:
             attack = ''.join([char for char in attack if char.isdigit()])
+        if attack == None:
+            attack = '0'
         dict[i]['attack'] = attack
         if defence != None:
             defence = ''.join([char for char in defence if char.isdigit()])
+        if defence == None:
+            defence = '0'
         dict[i]['defence'] = defence
         dict[i]['image'] = image
         dict[i]['name'] = name
@@ -672,6 +641,39 @@ async def getWalletDruids(walletAddress):
 
     return(dict)
         
+
+    
+async def fetch_nfts(wallet_address, chain, nft_contract):
+
+    #So, our API does return the required results, but it is not on the first page. We return up to 100 results per page, but since that wallet has more than 100, it is needed to go to the next pages. That code also filters only the nft contract you showed.
+    
+    f = open("tokens")
+    s = f.read()
+    tokensDict = json.loads(s)
+    api_key = tokensDict["moralis_api_key"]
+    
+    cursor = None
+    max_pages = 9999  # maximum number of pages to fetch
+    page_count = 0
+    filtered_results = []
+    while page_count < max_pages:
+        response = requests.get(f"https://deep-index.moralis.io/api/v2.2/{wallet_address}/nft?chain={chain}&format=decimal&media_items=false",
+                                headers={"accept": "application/json", "X-API-Key": api_key},
+                                params={"cursor": cursor})
+        data = response.json()
+        if "result" in data:
+            # Filter the result objects based on the specified nft_contract
+            filtered_result = [item for item in data["result"] if item["token_address"].lower() == nft_contract.lower()]
+            if len(filtered_result) > 0:
+                filtered_results.extend(filtered_result)
+            #print(f"Page {page_count + 1}: ", filtered_result) #list of dictionaries
+            cursor = data.get("cursor")
+            if not cursor:
+                return(filtered_results)
+        else:
+            print("Failed to fetch data")
+            break
+        page_count += 1
 
 
 async def getNumberOfRemainingPlayers():
@@ -847,88 +849,6 @@ async def getOpenProjBot():
     OpenProjBot = discord.Client(intents=discord.Intents.all())
     await OpenProjBot.login(str(OpenProjBotToken)) #BE WARY IF TESTING WITH OPENPROJBOTTEST, THEYRE IN DIFFERENT SERVERS AND HAVE DIFFERENT SERVERACCOUNTS SO CANT ACCESS GUILD FOR EXAMPLE
     return(OpenProjBot)
-   
-
-
-
-
-async def generateGameLeaderboard(guild, title, interaction):
-
-            await interaction.response.defer()              
-            #guildId = int(interaction.message.embeds[0].footer.text)
-            guildId = guild.id
-            guild = interaction.client.get_guild(guildId)
-            topParticipantsList = await extract_and_sort_tokens(guild.name, guild.name+'TokensEarnedThis'+title+'Contest')
-            # Initialize an empty string to store the result
-            result_string = ""
-            # Iterate through the list
-            for index, (tokens, name, percentage) in enumerate(topParticipantsList, start=1):
-                # Add position, name, and tokens to the result string
-                if str(guildId) == '1131699351496962069': #OpenProj server Ids
-                    result_string += f"`{index}` - {name} - `{tokens}` :coin: - " + str(percentage) +"% chance of winning\n"
-                else:
-                    result_string += f"`{index}` - {name} - `{tokens}` :coin:\n"
-
-            embed1 = discord.Embed(title="Welcome to the " + title + " Leaderboard", description = "Here you can see how you compare to the other Participants in this task", color=openProjCyan)
-            embed1.set_thumbnail(url = "https://i.postimg.cc/QxcWv8XY/trophy-1f3c6.png")
-
-            embed2 = discord.Embed(title=':trophy: Top Participants', description = 'This leaderboard displays Participants based on their Tokens Earned this '+title+' task\n\n'+result_string, color=openProjCyan)
-            embedList = [embed1, embed2]
-            await interaction.followup.send(embeds=embedList, ephemeral=True)
-
-
-async def generateGamesMenu(interaction):
-            
-            imageEmbed = discord.Embed(title='', color=openProjCyan)
-            imageEmbed.set_image(url = 'https://i.postimg.cc/k4bfb4vJ/Games.jpg')
-            embed = discord.Embed(title='OpenProj Games', description = '`Select a game below to start`', color=openProjCyan)
-
-            embedsList = [imageEmbed, embed]
-            options = await getGamesOptions()
-            view = discord.ui.View()
-            select = views.memberGameSelect(options)
-            view.add_item(select)
-
-            await interaction.followup.send(embeds=embedsList, view = view, ephemeral = True, wait=True)
-
-
-
-async def getGamesOptions():
-
-    options = [ # the list of options from which users can choose, a required field
-             discord.SelectOption(
-                label="Among Us",
-                description="Imposters vs Crewmates"
-            ),
-             discord.SelectOption(
-                label="Who's Most Likely (Bad Edition)",
-                description="Participants vote who's most likely"
-            ),
-             discord.SelectOption(
-                label="Russian Roulette",
-                description="Each participant must shoot themself, first to die loses"
-            ),
-            discord.SelectOption(
-                label="invaders",
-                description="Invaders Web Game"
-            ),
-            discord.SelectOption(
-                label="slicer",
-                description="Slicer Web Game"
-            ),
-            discord.SelectOption(
-                label="jumper",
-                description="Jumper Web Game"
-            ),
-            discord.SelectOption(
-                label="catcher",
-                description="Catcher Web Game"
-            ),
-        ]
-
-    return(options)
-
-
 
 
 async def getNowUnix():
@@ -1011,6 +931,21 @@ async def getMemberDictValue(memberId, key, nestedKey = 'False'):
     return(value)
 
 
+async def getAllMemberDictValues(key):
+
+            f = open("memberAccounts")
+            s = f.read()
+            membersDict = json.loads(s)
+
+            list = []
+            for memberId in membersDict:
+                value = membersDict[str(memberId)][key]
+                list.append(value)
+
+            return(list)
+                  
+
+
 
 async def getParticipantValue(memberId, key):
 
@@ -1056,4 +991,17 @@ async def newMemberFunc(memberId, memberName):
 
         with open('memberAccounts', 'w') as f:
             json.dump(membersDict, f, indent=4)
-        
+
+
+
+                  
+async def extractAndSortWins():
+
+    f = open("memberAccounts")
+    s = f.read()
+    membersDict = json.loads(s)
+    # Extract "Wins" and "discordName" values into a list of tuples
+    wins_and_names = [(int(data["wins"]), data["discordName"]) for data in membersDict.values()]
+    # Sort the list of tuples based on the "Wins" value
+    sorted_wins_and_names = sorted(wins_and_names, reverse=True)
+    return sorted_wins_and_names

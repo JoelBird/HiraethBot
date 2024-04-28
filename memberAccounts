@@ -2,19 +2,19 @@
     "433648637763911680": {
         "discordName": "joelbird.",
         "discordId": "433648637763911680",
-        "wins": "2",
+        "wins": "3",
         "losses": "0",
-        "polygonWallet": "0xb5105c731c5F3ec29eE4E84C7e0D45e8Ef43B300",
-        "ethereumWallet": "false",
+        "polygonWallet": "0x5Fa60DB0C6422f09925a45eae367F5C205feC961",
+        "ethereumWallet": "0x5Fa60DB0C6422f09925a45eae367F5C205feC961",
         "heroOptionsPosition": "0"
     },
     "960601733556482108": {
         "discordName": "rayjon_openproj",
         "discordId": "960601733556482108",
-        "wins": "2",
+        "wins": "4",
         "losses": "0",
         "polygonWallet": "0xb5105c731c5F3ec29eE4E84C7e0D45e8Ef43B300",
         "ethereumWallet": "0x0847BdA815625B1b54283a2547Fe8230e8ed7226",
-        "heroOptionsPosition": "0"
+        "heroOptionsPosition": "1"
     }
 }

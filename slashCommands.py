@@ -28,6 +28,26 @@ def slashCommands(tree):
     colorWhite = discord.Colour.from_str('#FFFFFF')
     colorPink = discord.Colour.from_str('#ffc0d6')
     colorGold = discord.Colour.from_str('#FDD835')
+    color1v1 = discord.Colour.from_str('#A86051')
+
+
+    @tree.command(name='leaderboard', description='View the top Hiraeth PVP players')
+    async def leaderboard(interaction: discord.Interaction):
+
+            await interaction.response.defer()
+            
+            leaderboardString = ''
+            sorted_data = await botFunctions.extractAndSortWins()
+            for wins, name in sorted_data:
+                leaderboardString = leaderboardString + f"🪙 `{name} - {wins} wins`\n"
+
+            embed1 = discord.Embed(title="Welcome to the Leaderboard", description = "Here you can see how you compare to the other participants of Hiraeth PVP", color=colorGold)
+            embed1.set_thumbnail(url = "https://i.postimg.cc/QxcWv8XY/trophy-1f3c6.png")
+
+            embed2 = discord.Embed(title=':trophy: Top Participants', description = 'This leaderboard displays Participants based on their Wins\n\n'+leaderboardString, color=colorGold)
+            embedList = [embed1, embed2]
+            await interaction.followup.send(embeds=embedList, ephemeral=True)
+
 
     @tree.command(name='add_staff', description='Add member to staff')
     async def add_staff(interaction: discord.Interaction, member: discord.Member):
@@ -46,6 +66,7 @@ def slashCommands(tree):
         embed = discord.Embed(title="",description=f"Successfully added {memberName} to Staff", color=colorGreen)
         await interaction.followup.send(embed=embed, ephemeral = True)
 
+
     @tree.command(name='remove_staff', description='Remove member of staff')
     async def remove_staff(interaction: discord.Interaction, member: discord.Member):
         
@@ -62,6 +83,7 @@ def slashCommands(tree):
         memberName = '<@' + str(member.id) + '>'
         embed = discord.Embed(title="",description=f"Successfully removed {memberName} from Staff", color=colorGreen)
         await interaction.followup.send(embed=embed, ephemeral = True)
+
 
     @tree.command(name='list_staff', description='List staff members')
     async def list_staff(interaction: discord.Interaction):
@@ -351,17 +373,38 @@ def slashCommands(tree):
         
         await interaction.response.defer(ephemeral=False)
 
-        memberName, memberId, heroName = await botFunctions.getRandomHero()
+        memberName, memberId, heroName = await botFunctions.getRandomHero(interaction.user.id)
         isAlreadyParticipant = await botFunctions.newParticipant(memberName, memberId, heroName)
 
-        embed = discord.Embed(title="",description=f"You have challenged the ghost of {memberName}\n`## Rules:\nAt the start of every Round, you are required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Round 1 Begins shortly..`", color=colorCyan)
+        embed = discord.Embed(title="",description=f"# {interaction.user.name} has challenged the ghost of {memberName}\n## Rules:\nAt the start of every Round, you are required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of each Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Round 1 Begins when you join the battle, {interaction.user.name}`", color=colorCyan)
         embed.set_image(url = "https://i.postimg.cc/rp6R5wWV/ghost.jpg")
-        await interaction.followup.send(embed=embed)
-
-        await asyncio.sleep(10)
+        view = discord.ui.View()
+        button = views.theButton(label="Join Battle", custom_id='wd421edc13d', style=discord.ButtonStyle.blurple)
+        view.add_item(button)
+        message = await interaction.followup.send(embed=embed, view=view)
 
         await botFunctions.setServerDictValue('battleChannelId', str(interaction.channel.id))
+        await botFunctions.setServerDictValue('battleMessageId', str(message.id))
         await botFunctions.setServerDictValue('battleInSession', 'true')
         await botFunctions.setServerDictValue('battleMode', 'ghost')
+        await botFunctions.setServerDictValue('ghostBattleStarterId', str(interaction.user.id))
 
-        await botFunctions.startBattle(interaction.client)
+    
+    @tree.command(name='battle_1v1', description='Select an opponent to battle 1v1')
+    async def battle_1v1(interaction: discord.Interaction, member: discord.Member):
+        
+        await interaction.response.defer(ephemeral=False)
+
+        embed = discord.Embed(title="",description=f"# {interaction.user.name} has challenged {member.name}\n## Rules:\nAt the start of every Round, you are required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of each Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Round 1 Begins when you and {member.name} join the battle`", color=color1v1)
+        embed.set_image(url = "https://i.postimg.cc/8c8Kb92v/knight.jpg")
+        view = discord.ui.View()
+        button = views.theButton(label="Join Battle", custom_id='wd421edc13d', style=discord.ButtonStyle.red)
+        view.add_item(button)
+        message = await interaction.followup.send(embed=embed, view=view)
+
+        await botFunctions.setServerDictValue('battleChannelId', str(interaction.channel.id))
+        await botFunctions.setServerDictValue('battleMessageId', str(message.id))
+        await botFunctions.setServerDictValue('battleInSession', 'true')
+        await botFunctions.setServerDictValue('battleMode', '1v1')
+        await botFunctions.setServerDictValue('1v1BattleStarterId', str(interaction.user.id))
+        await botFunctions.setServerDictValue('1v1BattleVictimId', str(member.id))

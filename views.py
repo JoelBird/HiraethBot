@@ -2,7 +2,6 @@ import discord
 import json
 import botFunctions
 from smartContract import smartContractFunctions
-import modals as modals
 import asyncio
 from binance.client import Client
 import datetime
@@ -124,6 +123,21 @@ class theButton(discord.ui.Button):
         
         if self.label == "Join Battle":
             await interaction.response.defer(ephemeral=True)
+
+            battleMode = await botFunctions.getServerDictValue('battleMode')
+            ghostBattleStarterId = await botFunctions.getServerDictValue('ghostBattleStarterId')
+            if battleMode == 'ghost' and str(interaction.user.id) != str(ghostBattleStarterId):
+                embed = discord.Embed(title='', description='You cannot join this ghost battle', color=colorBlack)
+                await interaction.followup.send(embed=embed, ephemeral = True)
+                return
+            
+            battleStarterId = await botFunctions.getServerDictValue('1v1BattleStarterId')
+            battleVictimId = await botFunctions.getServerDictValue('1v1BattleVictimId')
+            if battleMode == '1v1' and str(interaction.user.id) not in str(battleStarterId) + str(battleVictimId):
+                embed = discord.Embed(title='', description='You cannot join this 1v1 battle', color=colorBlack)
+                await interaction.followup.send(embed=embed, ephemeral = True)
+                return
+            
             await botFunctions.newMemberFunc(str(interaction.user.id), str(interaction.user.name))
 
             ethereumWallet = await botFunctions.getMemberDictValue(interaction.user.id, 'ethereumWallet')
@@ -162,17 +176,23 @@ class theButton(discord.ui.Button):
 
             heroName = str(self.custom_id)
             isAlreadyParticipant = await botFunctions.newParticipant(interaction.user.name, interaction.user.id, heroName)
-            if isAlreadyParticipant == False:
+            battleMode = await botFunctions.getServerDictValue('battleMode')
+            if isAlreadyParticipant == False and battleMode != 'ghost' and battleMode != '1v1':
                 await botFunctions.updateBattleEmbed(interaction)
             
             embed = discord.Embed(description=f'You have joined the battle with `{heroName}`', color=colorGreen)
             await interaction.followup.send(embed=embed, ephemeral = True)
 
-            battleMode = await botFunctions.getServerDictValue('battleMode')
             participantsToStart = await botFunctions.getServerDictValue('participantsToStart')
             numberOfParticipants = await botFunctions.getAllParticipantIds()
             numberOfParticipants = str(len(numberOfParticipants))
             if battleMode == 'participants' and numberOfParticipants == participantsToStart:
+                await botFunctions.startBattle(interaction.client)
+
+            if battleMode == 'ghost':
+                await botFunctions.startBattle(interaction.client)
+
+            if battleMode == '1v1' and int(numberOfParticipants) == 2:
                 await botFunctions.startBattle(interaction.client)
 
         if self.label == "Roll For Attack":
