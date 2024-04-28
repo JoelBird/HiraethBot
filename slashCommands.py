@@ -34,7 +34,7 @@ def slashCommands(tree):
     @tree.command(name='leaderboard', description='View the top Hiraeth PVP players')
     async def leaderboard(interaction: discord.Interaction):
 
-            await interaction.response.defer()
+            await interaction.response.defer(ephemeral=True)
             
             leaderboardString = ''
             sorted_data = await botFunctions.extractAndSortWins()

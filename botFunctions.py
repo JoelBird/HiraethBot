@@ -1001,7 +1001,7 @@ async def extractAndSortWins():
     s = f.read()
     membersDict = json.loads(s)
     # Extract "Wins" and "discordName" values into a list of tuples
-    wins_and_names = [(int(data["wins"]), data["discordName"]) for data in membersDict.values()]
+    wins_and_names = [(int(data["wins"]), data["discordName"]) for data in membersDict.values() if int(data["wins"]) > 0]
     # Sort the list of tuples based on the "Wins" value
     sorted_wins_and_names = sorted(wins_and_names, reverse=True)
     return sorted_wins_and_names
