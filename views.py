@@ -7,7 +7,6 @@ from binance.client import Client
 import datetime
 import random
 import requests
-import embeds
 import re
 
 colorCyan = discord.Colour.from_str('#00ffcd')
