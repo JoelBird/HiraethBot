@@ -545,6 +545,9 @@ async def getHeroData(heroName, memberId):
 
     ethereumWallet = await getMemberDictValue(memberId, 'ethereumWallet')
     polygonWallet = await getMemberDictValue(memberId, 'polygonWallet')
+
+    print(heroName)
+    print(memberId)
     
     if 'Knight' in heroName:
         print('in getHeroData - knight')
