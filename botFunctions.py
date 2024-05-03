@@ -436,7 +436,7 @@ async def heroesAttackFunc(channel):
         randomDefencePhrase = random.choice(defencePhrases)
 
         if int(victimHealth) <= 0:
-            alreadyDeadEmbed = discord.Embed(title=f"{memberName} attacks {victimName}", description=f"..but {victimName} is already dead..`", color=colorBlack)
+            alreadyDeadEmbed = discord.Embed(title=f"{memberName} attacks {victimName}", description=f"`..but {victimName} is already dead..`", color=colorBlack)
             alreadyDeadEmbed.set_thumbnail(url = heroImage)
             await channel.send(embed=alreadyDeadEmbed)
             await asyncio.sleep(7)
