@@ -547,10 +547,14 @@ async def getHeroData(heroName, memberId):
     polygonWallet = await getMemberDictValue(memberId, 'polygonWallet')
     
     if 'Knight' in heroName:
+        print('in getHeroData - knight')
         walletKnights = await getWalletKnights(ethereumWallet)
+        print(walletKnights)
         heroData = next((v for v in walletKnights.values() if v['name'] == heroName), None)
     if 'Druid' in heroName:
+        print('in getHeroData - Druid')
         walletDruids = await getWalletDruids(polygonWallet)
+        print(walletDruids)
         heroData = next((v for v in walletDruids.values() if v['name'] == heroName), None)
     return(heroData)
     

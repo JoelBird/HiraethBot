@@ -374,8 +374,9 @@ def slashCommands(tree):
 
         memberName, memberId, heroName = await botFunctions.getRandomHero(interaction.user.id)
         isAlreadyParticipant = await botFunctions.newParticipant(memberName, memberId, heroName)
-        victimNameString = '<@' + str(memberId) + '>'
         attackerNameString = '<@' + str(interaction.user.id) + '>'
+        victimNameString = '<@' + str(memberId) + '>'
+        
 
         embed = discord.Embed(title="",description=f"# {attackerNameString} has challenged the ghost of {victimNameString}\n## Rules:\nAt the start of every Round, you are required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of each Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Round 1 Begins when you join the battle, {interaction.user.name}`", color=colorCyan)
         embed.set_image(url = "https://i.postimg.cc/rp6R5wWV/ghost.jpg")
@@ -397,7 +398,10 @@ def slashCommands(tree):
         
         await interaction.response.defer(ephemeral=False)
 
-        embed = discord.Embed(title="",description=f"# {interaction.user.name} has challenged {member.name}\n## Rules:\nAt the start of every Round, you are required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of each Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Round 1 Begins when you and {member.name} join the battle`", color=color1v1)
+        attackerNameString = '<@' + str(interaction.user.id) + '>'
+        victimNameString = '<@' + str(interaction.user.id) + '>'
+
+        embed = discord.Embed(title="",description=f"# {attackerNameString} has challenged {victimNameString}\n## Rules:\nAt the start of every Round, you are required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of each Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Round 1 Begins when you and {member.name} join the battle`", color=color1v1)
         embed.set_image(url = "https://i.postimg.cc/8c8Kb92v/knight.jpg")
         view = discord.ui.View()
         button = views.theButton(label="Join Battle", custom_id='wd421edc13d', style=discord.ButtonStyle.red)
