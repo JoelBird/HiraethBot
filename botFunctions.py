@@ -12,7 +12,6 @@ from web3.middleware import geth_poa_middleware
 import random
 import pyshorteners
 import re
-import embeds
 from moralis import evm_api
 
 colorCyan = discord.Colour.from_str('#00ffcd')

@@ -8,7 +8,6 @@ import views
 import random
 import aioschedule as schedule
 import time
-import embeds
 import nest_asyncio
 from discord import Activity, ActivityType
 nest_asyncio.apply() #used to fix twint RuntimeError: This event loop is already running in async function

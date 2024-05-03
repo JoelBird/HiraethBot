@@ -17,7 +17,6 @@ def slashCommands(tree):
     import requests
     from smartContract import smartContractFunctions
     import random
-    import embeds
     import views
 
     colorCyan = discord.Colour.from_str('#00ffcd')
