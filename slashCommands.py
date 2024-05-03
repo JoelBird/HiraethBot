@@ -383,6 +383,7 @@ def slashCommands(tree):
         view = discord.ui.View()
         button = views.theButton(label="Join Battle", custom_id='wd421edc13d', style=discord.ButtonStyle.blurple)
         view.add_item(button)
+        embed.set_footer(text="", icon_url="https://i.postimg.cc/44HQ2t7X/thing.png")
         message = await interaction.followup.send(embed=embed, view=view)
 
         await botFunctions.setServerDictValue('battleChannelId', str(interaction.channel.id))
