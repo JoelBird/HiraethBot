@@ -238,7 +238,7 @@ def slashCommands(tree):
         dict[interaction.user.id] = {}
 
         embed = discord.Embed(title="",description="# A battle has started!\n`"+interaction.user.name + "` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: 0`\n`Round 1 Begins: `"+timestamp, color=colorRed)
-        embed.set_image(url = "https://i.postimg.cc/B6FNRfgk/battlebegins.jpg")
+        embed.set_image(url = "https://i.postimg.cc/FKBmytTy/battlebegins3.jpg")
 
         view = discord.ui.View()
         button = views.theButton(label="Join Battle", custom_id='wd421edc13d', style=discord.ButtonStyle.red)
@@ -287,7 +287,7 @@ def slashCommands(tree):
             return
 
         embed = discord.Embed(title="",description=f"# A battle has started!\n`{interaction.user.name}` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: 0/{str(participants_to_start)}`\n`Round 1 Begins when {str(participants_to_start)}/{str(participants_to_start)} participants have joined`", color=colorRed)
-        embed.set_image(url = "https://i.postimg.cc/B6FNRfgk/battlebegins.jpg")
+        embed.set_image(url = "https://i.postimg.cc/FKBmytTy/battlebegins3.jpg")
 
         view = discord.ui.View()
         button = views.theButton(label="Join Battle", custom_id='wd421edc13d', style=discord.ButtonStyle.red)
@@ -322,7 +322,7 @@ def slashCommands(tree):
         numberOfParticipants = await botFunctions.getAllParticipantIds()
         numberOfParticipants = str(len(numberOfParticipants))
         embed = discord.Embed(title="",description=f"# A battle has started!\n`{interaction.user.name}` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: {numberOfParticipants}`\n`Round 1 Begins when staff runs /battle_start`", color=colorRed)
-        embed.set_image(url = "https://i.postimg.cc/B6FNRfgk/battlebegins.jpg")
+        embed.set_image(url = "https://i.postimg.cc/FKBmytTy/battlebegins3.jpg")
 
         view = discord.ui.View()
         button = views.theButton(label="Join Battle", custom_id='wd421edc13d', style=discord.ButtonStyle.red)
