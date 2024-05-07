@@ -254,6 +254,7 @@ def slashCommands(tree):
 
         numberOfRemainingPlayers = int(await botFunctions.getNumberOfRemainingPlayers())
         if numberOfRemainingPlayers < 2:
+            print('not enuf dudes joined')
             embed = discord.Embed(title="Battle Cancelled", description="Not enough heroes joined", color=colorBlack)
             embed.set_thumbnail(url = "https://i.postimg.cc/wMJQnydT/fotor-ai-20240403211513.jpg")
             await botFunctions.setServerDictValue('battleInSession', 'false')
