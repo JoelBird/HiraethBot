@@ -248,15 +248,12 @@ async def updateBattleEmbed(interaction):
     
     embed.set_image(url = "https://i.postimg.cc/FKBmytTy/battlebegins3.jpg")
 
-    view = discord.ui.View()
-    button = views.theButton(label="Join Battle", custom_id='wd421edc13d', style=discord.ButtonStyle.red)
-    view.add_item(button)
 
     battleChannelId = int(await getServerDictValue('battleChannelId'))
     battleChannel = interaction.client.get_channel(battleChannelId)
     battleMessageId = int(await getServerDictValue('battleMessageId'))
     battleMessage = await battleChannel.fetch_message(battleMessageId)
-    await battleMessage.edit(embed = embed, view = view)
+    await battleMessage.edit(embed = embed, view = views.joinBattle())
 
 
 async def cancelBattleMessage(bot):
@@ -438,20 +435,20 @@ async def heroesAttackFunc(channel):
             alreadyDeadEmbed = discord.Embed(title=f"{memberName} attacks {victimName}", description=f"`..but {victimName} is already dead..`", color=colorBlack)
             alreadyDeadEmbed.set_thumbnail(url = heroImage)
             await channel.send(embed=alreadyDeadEmbed)
-            await asyncio.sleep(7)
+            await asyncio.sleep(5)
             continue
     
         totalAttack = int(attackRoll) + int(heroAttack)
         attackEmbed = discord.Embed(title=f"{memberName} Attacks {victimName}", description=f"`{heroName}` {randomAttackPhrase} `{victimHeroName}` with their `{randomWeapon}`\n\n`Attack Roll: {attackRoll}`\n`{heroName} Attack: {heroAttack}`\n`Total Attack: {str(totalAttack)}`", color=colorRed)
         attackEmbed.set_thumbnail(url = heroImage)
         await channel.send(embed=attackEmbed)
-        await asyncio.sleep(7)
+        await asyncio.sleep(5)
 
         totalDefence = int(victimDefenceRoll) + int(victimHeroDefence)  
         defenceEmbed = discord.Embed(title=f"{victimName} Defends", description=f"`{victimName}` {randomDefencePhrase} defends with their `{randomVictimWeapon}`\n\n`Defence Roll: {victimDefenceRoll}`\n`{victimHeroName} Defence: {victimHeroDefence}`\n`Total Defence: {str(totalDefence)}`", color=colorCyan)
         defenceEmbed.set_thumbnail(url = victimImage)
         await channel.send(embed=defenceEmbed)
-        await asyncio.sleep(7)
+        await asyncio.sleep(5)
         
         damageReceived = totalAttack - totalDefence
         if damageReceived < 0:
@@ -468,7 +465,7 @@ async def heroesAttackFunc(channel):
         outcomeEmbed = discord.Embed(title=f"{victimName} {outcomeWord}", description=f"`{victimHeroName} Post conflict:`\n\n`Total Damage Received: {damageReceived}`\n`Remaining Health: {updatedVictimHealth}`", color=outcomeColor)
         outcomeEmbed.set_thumbnail(url = victimImage)
         await channel.send(embed=outcomeEmbed)
-        await asyncio.sleep(7)
+        await asyncio.sleep(5)
 
         await setParticipantValue(victimId, 'health', str(updatedVictimHealth))
 

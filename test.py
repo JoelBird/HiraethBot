@@ -16,7 +16,7 @@ with open(csv_file_path, "r") as file:
 encoded_data = lzutf8.compress(csv_data.encode("utf-8"))
 
 # Set your API key
-api_key = "your_api_key_here"
+api_key = "e2b01faf-5d89-4a7d-8ae5-6b90371b443e"
 
 # Set the headers
 headers = {

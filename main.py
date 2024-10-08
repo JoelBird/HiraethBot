@@ -36,7 +36,7 @@ class HiraethBot(discord.Client):
 
         #How to make buttons work after bot restart = You need to make the view persistent
         #Give every element in that view a unique ID, set the timeout to None and inside the setup_hook you need to do bot.add_view(YourView())
-        #HiraethBot.add_view(views.enableView())
+        HiraethBot.add_view(views.joinBattle())
 
 
         await self.wait_until_ready()

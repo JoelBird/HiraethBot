@@ -1,12 +1,12 @@
 import requests
-import lzutf8
+import lzma
 import csv
 
 # API endpoint URL
-url = "https://example.com/v3/collections/export/csv"
+url = "https://api.niftykit.com/v3/collections/export/csv"
 
 # Set your API key
-api_key = "your_api_key_here"
+api_key = "e2b01faf-5d89-4a7d-8ae5-6b90371b443e"
 
 # Set the headers
 headers = {
@@ -15,7 +15,7 @@ headers = {
 
 # Set the query parameters
 params = {
-    "type": "lzutf8",
+    "type": "lzma",  # Assuming the data is compressed with lzma
 }
 
 # Make the GET request
@@ -25,7 +25,7 @@ response = requests.get(url, headers=headers, params=params)
 if response.status_code == 200:
     # Decompress the received data
     compressed_data = response.content
-    decompressed_data = lzutf8.decompress(compressed_data)
+    decompressed_data = lzma.decompress(compressed_data)
     
     # Save the decompressed data to a file
     with open("exported_file.csv", "wb") as file:

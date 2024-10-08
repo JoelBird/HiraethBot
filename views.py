@@ -20,6 +20,76 @@ colorGold = discord.Colour.from_str('#FDD835')
 
 
 
+class joinBattle(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.value = None
+
+    #id required for persistent view/ buttons to work on bot reset
+    @discord.ui.button(custom_id = '1111', label='Join Battle', style=discord.ButtonStyle.red)
+    async def button(self, interaction: discord.Interaction, button: discord.ui.Button):            
+        await interaction.response.defer(ephemeral=True)
+
+        battleMode = await botFunctions.getServerDictValue('battleMode')
+        ghostBattleStarterId = await botFunctions.getServerDictValue('ghostBattleStarterId')
+        if battleMode == 'ghost' and str(interaction.user.id) != str(ghostBattleStarterId):
+            embed = discord.Embed(title='', description='You cannot join this ghost battle', color=colorBlack)
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+        
+        battleStarterId = await botFunctions.getServerDictValue('1v1BattleStarterId')
+        battleVictimId = await botFunctions.getServerDictValue('1v1BattleVictimId')
+        if battleMode == '1v1' and str(interaction.user.id) not in str(battleStarterId) + str(battleVictimId):
+            embed = discord.Embed(title='', description='You cannot join this 1v1 battle', color=colorBlack)
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+        
+        await botFunctions.newMemberFunc(str(interaction.user.id), str(interaction.user.name))
+
+        ethereumWallet = await botFunctions.getMemberDictValue(interaction.user.id, 'ethereumWallet')
+        polygonWallet = await botFunctions.getMemberDictValue(interaction.user.id, 'polygonWallet')
+
+        if ethereumWallet and polygonWallet == 'false':
+            embed = discord.Embed(title='You have not connected a wallet', description='Use `/connect_wallets`', color=colorBlack)
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+        
+        options = await botFunctions.getHeroOptions(interaction.user.id)
+        options2 = options[0]
+        totalHeroes = len(options2)
+
+        if totalHeroes == 0:
+            embed = discord.Embed(title='', description='We could not find any Knights/Druids in your wallets', color=colorBlack)
+            await interaction.followup.send(embed=embed, ephemeral = True)
+            return
+    
+        await botFunctions.setMemberDictValue(interaction.user.id, 'heroOptionsPosition', '0')
+        view = discord.ui.View()
+        select = heroSelect(options=options2)
+        view.add_item(select)
+
+        if len(options) > 1:
+            button = theButton(label="➡️", custom_id='awdf2e1', style=discord.ButtonStyle.blurple)
+            view.add_item(button)
+
+        embed = discord.Embed(title='Select a hero', description='Select a hero to use in this battle with the dropdown below', color=colorRed)
+        embed.set_thumbnail(url = "https://i.postimg.cc/wMJQnydT/fotor-ai-20240403211513.jpg")
+
+        await interaction.followup.send(embed=embed, view=view, ephemeral = True)
+
+
+
+    @discord.ui.button(custom_id = 'awdwadp2o', label='Participants', style=discord.ButtonStyle.blurple)
+    async def button2(self, interaction: discord.Interaction, button: discord.ui.Button):            
+        await interaction.response.defer(ephemeral=True)
+        listOfPlayerNames = await botFunctions.getPlayerNames()
+        playersString = ''
+        for player in listOfPlayerNames:
+            playersString = playersString + f"🎮 `{player}`\n"
+        
+        embed = discord.Embed(title="", description = f"## Participants for this battle\n\n{playersString}", color=colorCyan)
+        embed.set_thumbnail(url = "https://i.postimg.cc/yYfznPPL/contoller-emoji.png")
+        await interaction.followup.send(embed=embed, ephemeral = True)
 
 #This select is different, its a subclassed discord.ui.select, which means i can parse variables to it inside the init
 class victimSelect(discord.ui.Select):
@@ -119,56 +189,6 @@ class theButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         
         #Dont add defer here, because some functions accessed here have their own defers
-        
-        if self.label == "Join Battle":
-            await interaction.response.defer(ephemeral=True)
-
-            battleMode = await botFunctions.getServerDictValue('battleMode')
-            ghostBattleStarterId = await botFunctions.getServerDictValue('ghostBattleStarterId')
-            if battleMode == 'ghost' and str(interaction.user.id) != str(ghostBattleStarterId):
-                embed = discord.Embed(title='', description='You cannot join this ghost battle', color=colorBlack)
-                await interaction.followup.send(embed=embed, ephemeral = True)
-                return
-            
-            battleStarterId = await botFunctions.getServerDictValue('1v1BattleStarterId')
-            battleVictimId = await botFunctions.getServerDictValue('1v1BattleVictimId')
-            if battleMode == '1v1' and str(interaction.user.id) not in str(battleStarterId) + str(battleVictimId):
-                embed = discord.Embed(title='', description='You cannot join this 1v1 battle', color=colorBlack)
-                await interaction.followup.send(embed=embed, ephemeral = True)
-                return
-            
-            await botFunctions.newMemberFunc(str(interaction.user.id), str(interaction.user.name))
-
-            ethereumWallet = await botFunctions.getMemberDictValue(interaction.user.id, 'ethereumWallet')
-            polygonWallet = await botFunctions.getMemberDictValue(interaction.user.id, 'polygonWallet')
-
-            if ethereumWallet and polygonWallet == 'false':
-                embed = discord.Embed(title='You have not connected a wallet', description='Use `/connect_wallets`', color=colorBlack)
-                await interaction.followup.send(embed=embed, ephemeral = True)
-                return
-            
-            options = await botFunctions.getHeroOptions(interaction.user.id)
-            options2 = options[0]
-            totalHeroes = len(options2)
-
-            if totalHeroes == 0:
-                embed = discord.Embed(title='', description='We could not find any Knights/Druids in your wallets', color=colorBlack)
-                await interaction.followup.send(embed=embed, ephemeral = True)
-                return
-        
-            await botFunctions.setMemberDictValue(interaction.user.id, 'heroOptionsPosition', '0')
-            view = discord.ui.View()
-            select = heroSelect(options=options2)
-            view.add_item(select)
-
-            if len(options) > 1:
-                button = theButton(label="➡️", custom_id='awdf2e1', style=discord.ButtonStyle.blurple)
-                view.add_item(button)
-
-            embed = discord.Embed(title='Select a hero', description='Select a hero to use in this battle with the dropdown below', color=colorRed)
-            embed.set_thumbnail(url = "https://i.postimg.cc/wMJQnydT/fotor-ai-20240403211513.jpg")
-
-            await interaction.followup.send(embed=embed, view=view, ephemeral = True)
 
         if self.label == "Select Hero":
             await interaction.response.defer(ephemeral=True)
