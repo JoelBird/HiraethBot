@@ -236,23 +236,25 @@ async def updateBattleEmbed(interaction):
     battleMode = await getServerDictValue('battleMode')
     participantsToStart = await getServerDictValue('participantsToStart')
 
-
-    if battleMode == 'countdown':
-        embed = discord.Embed(title="",description=f"# A battle has started!\n`{interaction.user.name}` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: {numberOfParticipants}`\n`Round 1 Begins: `"+timestamp, color=colorRed)
-    
-    if battleMode == 'participants':
-        embed = discord.Embed(title="",description=f"# A battle has started!\n`{interaction.user.name}` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: {numberOfParticipants}/{participantsToStart}`\n`Round 1 Begins when {participantsToStart}/{participantsToStart} participants have joined`", color=colorRed)
-    
-    if battleMode == 'staff':
-        embed = discord.Embed(title="",description=f"# A battle has started!\n`{interaction.user.name}` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: {numberOfParticipants}`\n`Round 1 Begins when staff runs /battle_start`", color=colorRed)
-    
-    embed.set_image(url = "https://i.postimg.cc/FKBmytTy/battlebegins3.jpg")
-
-
     battleChannelId = int(await getServerDictValue('battleChannelId'))
     battleChannel = interaction.client.get_channel(battleChannelId)
     battleMessageId = int(await getServerDictValue('battleMessageId'))
     battleMessage = await battleChannel.fetch_message(battleMessageId)
+    battleMessageAuthor = str(battleMessage.author.name)
+
+
+    if battleMode == 'countdown':
+        embed = discord.Embed(title="",description=f"# A battle has started!\n`{battleMessageAuthor}` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: {numberOfParticipants}`\n`Round 1 Begins: `"+timestamp, color=colorRed)
+    
+    if battleMode == 'participants':
+        embed = discord.Embed(title="",description=f"# A battle has started!\n`{battleMessageAuthor}` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: {numberOfParticipants}/{participantsToStart}`\n`Round 1 Begins when {participantsToStart}/{participantsToStart} participants have joined`", color=colorRed)
+    
+    if battleMode == 'staff':
+        embed = discord.Embed(title="",description=f"# A battle has started!\n`{battleMessageAuthor}` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: {numberOfParticipants}`\n`Round 1 Begins when staff runs /battle_start`", color=colorRed)
+    
+    embed.set_image(url = "https://i.postimg.cc/FKBmytTy/battlebegins3.jpg")
+
+
     await battleMessage.edit(embed = embed, view = views.joinBattle())
 
 
