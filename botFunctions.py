@@ -1,3 +1,4 @@
+import aiohttp
 import discord
 import json
 import asyncio
@@ -23,170 +24,289 @@ colorWhite = discord.Colour.from_str('#FFFFFF')
 colorPink = discord.Colour.from_str('#ffc0d6')
 colorGold = discord.Colour.from_str('#FDD835')
 
+
+async def get_defeated_heroes():
+    try:
+        # Load the JSON file
+        with open("serverDict", 'r') as file:
+            server_dict = json.load(file)
+
+        # Get the participants dictionary
+        participants = server_dict.get("participantsDict", {})
+        defeated_heroes = []
+
+        # Iterate through each participant
+        for participant_id, participant_data in participants.items():
+            health = int(participant_data.get("health", 0))  # Convert health to integer
+            if health <= 0:  # Check if health is 0 or less
+                hero_name = participant_data.get("heroName")
+                if hero_name:  # Ensure heroName exists
+                    defeated_heroes.append(hero_name)
+
+        return defeated_heroes
+
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        return []
+
+
+
+# In-memory dictionary to keep track of hero options positions for each user
+hero_options_positions = {}
+
+# Function to update the hero options position for a user
+async def update_hero_options_position(user_id, updatedHeroOptionsPosition):
+    hero_options_positions[user_id] = updatedHeroOptionsPosition
+
+
+# Function to get the hero options position for a user
+async def get_hero_options_position(user_id):
+    return hero_options_positions.get(user_id)
+
+
+
 async def startBattle(bot):
 
-        await cancelBattleMessage(bot)
+    await cancelBattleMessage(bot)
 
-        battleChannelId = int(await getServerDictValue('battleChannelId'))
-        battleChannel = bot.get_channel(battleChannelId)
+    battleChannelId = int(await getServerDictValue('battleChannelId'))
+    battleChannel = bot.get_channel(battleChannelId)
+    
+    view = discord.ui.View()
+    button = views.theButton(label="Roll For Attack", custom_id='awdg423d', style=discord.ButtonStyle.red)
+    view.add_item(button)
+
+    button = views.theButton(label="Roll For Defence", custom_id='awdwad1312', style=discord.ButtonStyle.blurple)
+    view.add_item(button)
+
+    options = await getVictimOptions()
+    select = views.victimSelect(options=options)
+    view.add_item(select)
+
+    participantNames = ''
+    participantIds = await getAllParticipantIds()
+    for memberId in participantIds:
+        memberNameString = '<@' + str(memberId) + '>'
+        participantNames = participantNames + memberNameString + '\n'
+    
+    embed = discord.Embed(title=f"Battle has commenced!", description=f"**Participants:**\n{participantNames}", color=colorGold)
+    embed.set_image(url = "https://i.postimg.cc/wMJQnydT/fotor-ai-20240403211513.jpg")
+    await battleChannel.send(embed=embed)
+
+    await asyncio.sleep(15)
+
+    numberOfRemainingPlayers = int(await getNumberOfRemainingPlayers())
+    roundNumber = 1
+    while numberOfRemainingPlayers >= 2:
         
-        view = discord.ui.View()
-        button = views.theButton(label="Roll For Attack", custom_id='awdg423d', style=discord.ButtonStyle.red)
-        view.add_item(button)
+        nowUnix = await getNowUnix()
+        end = nowUnix + 15
+        timestamp = await unixToTimestamp(end)
 
-        button = views.theButton(label="Roll For Defence", custom_id='awdwad1312', style=discord.ButtonStyle.blurple)
-        view.add_item(button)
+        phrases = ["🪨 Let's Rock!", "🔥 It's getting heated! 🔥", "👊 Fight!", "💯 This is Heroes Of Hiraeth!", "😏 Who wants $HGLD?", "🪖 HOO-HAA!!", "🏆 Winner takes all!", "⏰ Time to fight!"]
+        randomPhrase = random.choice(phrases)
 
-        options = await getVictimOptions()
-        select = views.victimSelect(options=options)
-        view.add_item(select)
+        embed = discord.Embed(title="", description=f"`Time left:` {timestamp}\n# {randomPhrase}", color=colorRed)
+        if randomPhrase == "💯 This is Heroes Of Hiraeth!":
+            embed.set_thumbnail(url = "https://em-content.zobj.net/source/joypixels-animations/366/hundred-points_1f4af.gif")
+        elif randomPhrase == "👊 Fight!":
+            embed.set_thumbnail(url = "https://em-content.zobj.net/source/joypixels-animations/366/oncoming-fist_1f44a.gif")
+        elif randomPhrase == "😏 Who wants $HGLD?":
+            embed.set_thumbnail(url = "https://em-content.zobj.net/source/joypixels-animations/366/smirking-face_1f60f.gif")
+        elif randomPhrase == "⏰ Time to fight!":
+            embed.set_thumbnail(url = "https://em-content.zobj.net/source/joypixels-animations/366/alarm-clock_23f0.gif")
+        elif randomPhrase == "🪖 HOO-HAA!!":
+            embed.set_thumbnail(url = "https://em-content.zobj.net/source/joypixels-animations/366/pistol_1f52b.gif")
+        elif randomPhrase == "🪨 Let's Rock!":
+            embed.set_thumbnail(url = "https://em-content.zobj.net/source/joypixels-animations/366/bomb_1f4a3.gif")
+        elif randomPhrase == "🏆 Winner takes all!":
+            embed.set_thumbnail(url = "https://em-content.zobj.net/source/joypixels-animations/366/crown_1f451.gif")
+        else:
+            embed.set_thumbnail(url = "https://em-content.zobj.net/source/joypixels-animations/366/fire_1f525.gif")
 
-        participantNames = ''
-        participantIds = await getAllParticipantIds()
-        for memberId in participantIds:
-            memberNameString = '<@' + str(memberId) + '>'
-            participantNames = participantNames + memberNameString + '\n'
-        
-        embed = discord.Embed(title=f"Battle has commenced!", description=f"**Participants:**\n{participantNames}", color=colorGold)
-        embed.set_image(url = "https://i.postimg.cc/wMJQnydT/fotor-ai-20240403211513.jpg")
-        await battleChannel.send(embed=embed)
+        if roundNumber == 1:
+            embed.set_image(url = "https://i.postimg.cc/Dfc89xWj/round1.png")
+        elif roundNumber == 2:
+            embed.set_image(url = "https://i.postimg.cc/BZNnYtyR/round2.png")
+        elif roundNumber == 3:
+            embed.set_image(url = "https://i.postimg.cc/fbqn3w7F/round3.png")
+        elif roundNumber == 4:
+            embed.set_image(url = "https://i.postimg.cc/MKJkf3RW/round4.png")
+        elif roundNumber == 5:
+            embed.set_image(url = "https://i.postimg.cc/W1SxK2y3/round5.png")
+        elif roundNumber == 6:
+            embed.set_image(url = "https://i.postimg.cc/j5n9LySw/round6.png")
+        elif roundNumber == 7:
+            embed.set_image(url = "https://i.postimg.cc/g0TQzgmb/round7.png")
+        elif roundNumber == 8:
+            embed.set_image(url = "https://i.postimg.cc/tJhMzyP9/round8.png")
+        elif roundNumber == 9:
+            embed.set_image(url = "https://i.postimg.cc/8kW9GdYx/round9.png")
+        elif roundNumber == 10:
+            embed.set_image(url = "https://i.postimg.cc/3RGSK7t2/round10.png")
+        else:
+            embed.set_image(url = "https://i.postimg.cc/gjPMj57Q/roundxxx.png")
+        await battleChannel.send(embed=embed, view = view)
 
         await asyncio.sleep(15)
 
+        await autofillForAbsentPlayers()
+
+        await heroesAttackFunc(battleChannel)
+        
+        embed = discord.Embed(title="",description=f"# Round {roundNumber} Outcome", color=colorGold)
+        participantIds = await getAllParticipantIds()
+        for id in participantIds:
+            memberName = await getParticipantValue(id, 'memberName')
+            heroName = await getParticipantValue(id, 'heroName')
+            heroClass = await getParticipantValue(id, 'heroClass')
+            health = await getParticipantValue(id, 'health')
+            if int(health) <= 0:
+                embed.add_field(name=f"💀 {memberName}", value=f"Health: {health}", inline=True)
+            if int(health) > 0:
+                embed.add_field(name=f"❤️ {memberName}", value=f"Health: {health}", inline=True)     
+
+        imageLinks = ["https://i.postimg.cc/YSQDDzLf/vs-1.png", "https://i.postimg.cc/W1vx45KQ/vs-2.png", "https://i.postimg.cc/VkCK5WgQ/vs-3.png"]   
+        imageLink = random.choice(imageLinks)
+        embed.set_image(url = imageLink)
+        await battleChannel.send(embed=embed)
+
+        await asyncio.sleep(10)
+
+
         numberOfRemainingPlayers = int(await getNumberOfRemainingPlayers())
-        roundNumber = 1
-        while numberOfRemainingPlayers >= 2:
-            
-            nowUnix = await getNowUnix()
-            end = nowUnix + 30
-            timestamp = await unixToTimestamp(end)
 
-            embed = discord.Embed(title=f"Round {roundNumber}", description=f"`Time left:` {timestamp}", color=colorRed)
-            embed.set_image(url = "https://i.postimg.cc/4NXdnq89/1v1battle3.jpg")
-            await battleChannel.send(embed=embed, view = view)
+        if numberOfRemainingPlayers == 1:
+            heroName, heroClass, memberName, memberId, heroImage = await getRemainingPlayer()
 
-            await asyncio.sleep(30)
+        if numberOfRemainingPlayers == 0:
+            heroName, memberName, memberId, heroImage, health = await getPlayerWithMostHealth()
 
-            await autofillForAbsentPlayers()
-
-            await heroesAttackFunc(battleChannel)
-            
-            outcomeString = ''
-            participantIds = await getAllParticipantIds()
-            for id in participantIds:
-                memberName = await getParticipantValue(id, 'memberName')
-                heroName = await getParticipantValue(id, 'heroName')
-                heroClass = await getParticipantValue(id, 'heroClass')
-                health = await getParticipantValue(id, 'health')
-                if int(health) <= 0:
-                    outcomeString = outcomeString + f"`💀 {memberName} | {heroName} - Health: {health}`\n"
-                if int(health) > 0:
-                    outcomeString = outcomeString + f"`❤️ {memberName} | {heroName} - Health: {health}`\n"
-            embed = discord.Embed(title=f"Round {roundNumber} Outcome",description=outcomeString, color=colorBlack)
-            embed.set_image(url = "https://i.postimg.cc/PxBxFK0n/wounded-knight.jpg")
-            await battleChannel.send(embed=embed)
-
-            await asyncio.sleep(10)
-
-            numberOfRemainingPlayers = int(await getNumberOfRemainingPlayers())
-            if numberOfRemainingPlayers == 1:
-                heroName, memberName, memberId, heroImage = await getRemainingPlayer()
-                knightWins = await getServerDictValue('knightWins')
-                knightTournamentWins = await getServerDictValue('knightTournamentWins')
-                druidWins = await getServerDictValue('druidWins')
-                druidTournamentWins = await getServerDictValue('druidTournamentWins')
-                isTournamentActive = await getServerDictValue('isTournamentActive')
-                tournamentName = await getServerDictValue('tournamentName')
+        if numberOfRemainingPlayers == 1 or numberOfRemainingPlayers == 0:
+            knightWins = await getServerDictValue('knightWins')
+            knightTournamentWins = await getServerDictValue('knightTournamentWins')
+            druidWins = await getServerDictValue('druidWins')
+            druidTournamentWins = await getServerDictValue('druidTournamentWins')
+            isTournamentActive = await getServerDictValue('isTournamentActive')
+            tournamentName = await getServerDictValue('tournamentName')
 
 
-                if 'Druid' in str(heroName):
-                    clan = '`Druids!`'
-                    druidWins = int(druidWins) + 1
-                    await setServerDictValue('druidWins', str(druidWins))
-                    if isTournamentActive == 'true':
-                        druidTournamentWins = int(druidTournamentWins) + 1
-                        await setServerDictValue('druidTournamentWins', str(druidTournamentWins))
-                        
-                if 'Knight' in str(heroName):
-                    clan = '`Knights!`'
-                    knightWins = await getServerDictValue('knightWins')
-                    knightWins = int(knightWins) + 1
-                    await setServerDictValue('knightWins', str(knightWins))
-                    if isTournamentActive == 'true':
-                        knightTournamentWins = int(knightTournamentWins) + 1
-                        await setServerDictValue('knightTournamentWins', str(knightTournamentWins))
-
-                wins = await getMemberDictValue(memberId, 'wins')
-                updatedWins = str(int(wins) + 1)
-                await setMemberDictValue(memberId, 'wins', updatedWins)
-                
-                embed = discord.Embed(title=f"{memberName} Stands Victorious!", description=f"`{heroName}` is the last remaining Hero\n\nThis is another victory for the {clan}\n\n", color=colorGold)
-                embed.add_field(name='Knight Victories', value=knightWins, inline=True)
-                embed.add_field(name='Druid Victories', value=druidWins, inline=True)
-                embed.add_field(name=f'{memberName} Victories', value=updatedWins, inline=True)
+            if 'druid' in str(heroClass):
+                clan = '`Druids!`'
+                druidWins = int(druidWins) + 1
+                await setServerDictValue('druidWins', str(druidWins))
                 if isTournamentActive == 'true':
-                    embed.add_field(name=f'Knight {tournamentName} Victories', value=knightTournamentWins, inline=True)
-                    embed.add_field(name=f'Druid {tournamentName} Victories', value=druidTournamentWins, inline=True)
+                    druidTournamentWins = int(druidTournamentWins) + 1
+                    await setServerDictValue('druidTournamentWins', str(druidTournamentWins))
+                    
+            if 'knight' in str(heroClass):
+                clan = '`Knights!`'
+                knightWins = await getServerDictValue('knightWins')
+                knightWins = int(knightWins) + 1
+                await setServerDictValue('knightWins', str(knightWins))
+                if isTournamentActive == 'true':
+                    knightTournamentWins = int(knightTournamentWins) + 1
+                    await setServerDictValue('knightTournamentWins', str(knightTournamentWins))
 
-                embed.set_image(url = heroImage)
-                await battleChannel.send(embed=embed)
+            wins = await getMemberValue(memberId, 'wins')
+            updatedWins = str(int(wins) + 1)
+            await updateMemberValue(memberId, 'wins', updatedWins)
 
-                await resetServerDict()
-                await resetPlayerChoices()
-                return
-            
+            embedLoading = discord.Embed(title="Processing Transaction..", description="", color=colorCyan)
+            embedLoading.set_thumbnail(url="https://i.postimg.cc/ry0MnB9v/loading-gif.gif")   
+            loadingMessage = await battleChannel.send(embed=embedLoading)
+
+            wallets = await getMemberValue(memberId, 'wallets')
+            walletAddress = wallets[0]
+            winnerHgld = await calculateWinnerHgld()
+            signature = await sendHgld(walletAddress, winnerHgld)
+
+            if numberOfRemainingPlayers == 1:
+                embed = discord.Embed(title=f"{memberName} is our Champion!", description=f"`{heroName}` is the last remaining Hero and has been sent **{winnerHgld} $HGLD!**\n\n`Transaction Signature: {signature}`\n\nThis is another victory for the **{clan}**\n\n", color=colorGold)
+
             if numberOfRemainingPlayers == 0:
-                embed = discord.Embed(title=f"All heroes have perished", description=f"No one survived the previous Round", color=colorBlack)
-                embed.set_image(url = 'https://i.postimg.cc/P5f5RgmB/empty-battlefield.jpg')
-                await battleChannel.send(embed=embed)
-                await resetServerDict()
-                await resetPlayerChoices()
-                return
+                embed = discord.Embed(title=f"{memberName} is our Champion!", description=f"`{heroName}` is the Hero with the most remaining health after everyone has perished and has been sent **{winnerHgld} $HGLD!**\n\n`Transaction Signature: {signature}`\n\nThis is another victory for the **{clan}**\n\n", color=colorGold)
             
+            embed.add_field(name='Knight Victories', value=knightWins, inline=True)
+            embed.add_field(name='Druid Victories', value=druidWins, inline=True)
+            embed.add_field(name=f'{memberName} Victories', value=updatedWins, inline=True)
+            if isTournamentActive == 'true':
+                embed.add_field(name=f'Knight {tournamentName} Victories', value=knightTournamentWins, inline=True)
+                embed.add_field(name=f'Druid {tournamentName} Victories', value=druidTournamentWins, inline=True)
+
+            embed.set_image(url = heroImage)
+            embed.set_thumbnail(url="https://em-content.zobj.net/source/microsoft/379/trophy_1f3c6.png")       
+            await battleChannel.send(embed=embed)
+            await loadingMessage.delete()
+
+            defeated_heroes = await get_defeated_heroes()
+            endpoint = f"https://www.heroesnft.app:3002/api/update-defeated-heroes"
+
+            payload = {"defeatedHeroes": defeated_heroes}
+            headers = {"Content-Type": "application/json"}
+
+            try:
+                response = requests.post(endpoint, json=payload, headers=headers)
+                response.raise_for_status()
+                print(response.json())
+            except requests.exceptions.RequestException as e:
+                print({"error": str(e)})
+
+            await resetServerDict()
             await resetPlayerChoices()
-            roundNumber = roundNumber + 1
+            return
+        
+        
+        await resetPlayerChoices()
+        roundNumber = roundNumber + 1
+
+
 
 async def getRandomHero(userId):
 
-        walletTypes = ['ethereumWallet', 'polygonWallet']
-        randomWalletType = random.choice(walletTypes)
-        listOfWallets = []
-        listOfMemberIds = []
-        listOfMemberNames = []
+    heroTypes = ['druid', 'knight']
+    randomHeroClass = random.choice(heroTypes)
 
-        f = open("memberAccounts")
-        s = f.read()
-        membersDict = json.loads(s)
-
-        for account in membersDict:
-            if membersDict[account][randomWalletType] == 'false' or membersDict[account]['discordId'] == str(userId):
-                continue
-            
-            listOfWallets.append(membersDict[account][randomWalletType])
-            listOfMemberIds.append(membersDict[account]['discordId'])
-            listOfMemberNames.append(membersDict[account]['discordName'])
+    numberOfNfts = 0
+    while numberOfNfts < 1:
         
-        length = len(listOfWallets) - 1
-        numberOfNfts = 0
-        while numberOfNfts < 1:
-            selectedWalletIndex = random.randint(0, length)
-            selectedWallet = listOfWallets[selectedWalletIndex]
-            memberId = listOfMemberIds[selectedWalletIndex]
-            memberName = listOfMemberNames[selectedWalletIndex]
-            
-            if randomWalletType == 'ethereumWallet':
-                walletThings = await getWalletKnights(selectedWallet)
+        randomMember = await getRandomMember()
+        if randomMember['discordId'] == str(userId):
+            continue
 
-            if randomWalletType == 'polygonWallet':
-                walletThings = await getWalletDruids(selectedWallet)
+        if randomHeroClass == 'knight':
+            walletItems = await getWalletKnights(randomMember['wallets'][0])
 
-            numberOfNfts = len(walletThings) #Prevent selecting wallet with 0 druids/knights
-        
-        length = len(walletThings) - 1
-        random_number = random.randint(0, length)
-        heroName = walletThings[random_number]['name']
+        if randomHeroClass == 'druid':
+            walletItems = await getWalletDruids(randomMember['wallets'][0])
 
-        return(memberName, memberId, heroName)
+        numberOfNfts = len(walletItems) #Prevent selecting wallet with 0 druids/knights
+
+    length = len(walletItems) - 1
+    random_number = random.randint(0, length)
+    heroName = walletItems[random_number]['name']
+
+    return(randomMember['discordName'], randomMember['discordId'], heroName, randomHeroClass)
+
+
+
+async def getRandomMember():
+    url = 'https://www.heroesnft.app:3002/api/member/random'  # Endpoint for getting a random member
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                response.raise_for_status()  # Raises an HTTPError for unsuccessful status codes
+                
+                # Parse JSON response
+                data = await response.json()
+                print(f"Random Member: {data}")
+                return data
+
+    except aiohttp.ClientResponseError as http_err:
+        print(f'HTTP error occurred: {http_err}')
+    except Exception as err:
+        print(f'Other error occurred: {err}')
 
 
 async def getAllParticipantIds():
@@ -202,6 +322,12 @@ async def getAllParticipantIds():
         key_names.append(key)
 
     return(key_names)
+
+
+async def calculateWinnerHgld():
+    numberOfParticipants = len(await getAllParticipantIds())
+    winnerHgld = numberOfParticipants * 100
+    return(winnerHgld)
 
 
 async def resetServerDict():
@@ -252,9 +378,6 @@ async def updateBattleEmbed(interaction):
     if battleMode == 'staff':
         embed = discord.Embed(title="",description=f"# A battle has started!\n`{battleMessageAuthor}` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: {numberOfParticipants}`\n`Round 1 Begins when staff runs /battle_start`", color=colorRed)
     
-    embed.set_image(url = "https://i.postimg.cc/FKBmytTy/battlebegins3.jpg")
-
-
     await battleMessage.edit(embed = embed, view = views.joinBattle())
 
 
@@ -266,18 +389,6 @@ async def cancelBattleMessage(bot):
     await battleMessage.edit(view = None)
 
 
-async def isParticipant(interaction):
-
-    f = open("serverDict")
-    s = f.read()
-    serverDict = json.loads(s)
-
-    try:
-        serverDict['participantsDict'][str(interaction.user.id)]
-        return(True)
-    except:
-        return(False)
-    
 
 async def hasRolledForAttack(interaction):
 
@@ -356,7 +467,7 @@ async def autofillForAbsentPlayers():
 
         defenceRoll = participants[str(participant)]['defenceRoll']
         if defenceRoll == 'false':
-            random_number = random.randint(0, 100)
+            random_number = random.randint(0, 50)
             participants[str(participant)]['defenceRoll'] = random_number
 
         victimName = participants[str(participant)]['victimName']
@@ -402,13 +513,17 @@ async def heroesAttackFunc(channel):
         if 'None' not in str(weapon2):
             weapons.append(weapon2)
         if len(weapons) == 0:
-            weapons.append('Fist')
-            weapons.append('Foot')
-            weapons.append('Helmet')
-            weapons.append('Big toe')
+            victimWeapons.append('Fist')
+            victimWeapons.append('Foot')
+            victimWeapons.append('Helmet')
+            victimWeapons.append('Big toe')
+            victimWeapons.append('UK size 10 shoe')
+            victimWeapons.append('Pocket watch')
+            victimWeapons.append('Open palm')
+            victimWeapons.append('Nails')
         randomWeapon = random.choice(weapons)
 
-        attackPhrases = ['lands a blow on', 'swiftly slices', 'batters', 'executes a flurry of blows on', 'hammers down on', 'slashes', 'sweeps', 'blazes', 'tranquilizes', 'launches an attack on', 'stuns', 'brutalizes', 'concusses', 'impales', 'erupts onto', 'aggressively strikes']
+        attackPhrases = ['lands a blow on', 'swiftly slices', 'batters', 'executes a flurry of blows on', 'hammers down on', 'slashes', 'sweeps', 'blazes', 'tranquilizes', 'launches an attack on', 'stuns', 'brutalizes', 'concusses', 'impales', 'erupts onto', 'aggressively strikes', 'Staggers', 'mauls', 'tenaciously sweeps', 'wrathfully bashes', 'forefully strikes']
         randomAttackPhrase = random.choice(attackPhrases)
 
         victimImage = await getParticipantValue(victimId, 'heroImage')
@@ -428,6 +543,10 @@ async def heroesAttackFunc(channel):
             victimWeapons.append('Foot')
             victimWeapons.append('Helmet')
             victimWeapons.append('Big toe')
+            victimWeapons.append('UK size 8 shoe')
+            victimWeapons.append('Pocket watch')
+            victimWeapons.append('Open palm')
+            victimWeapons.append('Nails')
         randomVictimWeapon = random.choice(victimWeapons)
 
         defencePhrases = ['valiantly', 'swiftly', 'Vigorously', 'Passionately', 'Courageously', 'Firmly', 'Tenaciously', 'Skillfully', 'Instinctively', 'Bravely', 'Decisively', 'Strategically']
@@ -475,7 +594,7 @@ async def heroesAttackFunc(channel):
         
 
 
-async def newParticipant(memberName, memberId, heroName):
+async def newParticipant(memberName, memberId, heroName, heroClass):
 
     f = open("serverDict")
     s = f.read()
@@ -485,7 +604,7 @@ async def newParticipant(memberName, memberId, heroName):
         serverDict['participantsDict'][str(memberId)]
         return(True)
     except:
-        heroData = await getHeroData(heroName, memberId)
+        heroData = await getHeroData(heroName, heroClass, memberId)
          
         serverDict['participantsDict'][str(memberId)] = {}
         serverDict['participantsDict'][str(memberId)]['attackRoll'] = 'false'
@@ -499,12 +618,12 @@ async def newParticipant(memberName, memberId, heroName):
         serverDict['participantsDict'][str(memberId)]['heroDefence'] = heroData['defence']
         serverDict['participantsDict'][str(memberId)]['heroImage'] = heroData['image']
 
-        if 'Knight' in heroName:
+        if 'knight' in heroClass:
             serverDict['participantsDict'][str(memberId)]['heroClass'] = 'knight'
             serverDict['participantsDict'][str(memberId)]['weapon1'] = heroData['leftScabbard']
             serverDict['participantsDict'][str(memberId)]['weapon2'] = heroData['rightScabbard']
 
-        if 'Druid' in heroName:
+        if 'druid' in heroClass:
             serverDict['participantsDict'][str(memberId)]['heroClass'] = 'druid'
             serverDict['participantsDict'][str(memberId)]['weapon1'] = heroData['staff']
             serverDict['participantsDict'][str(memberId)]['weapon2'] = heroData['weapon']
@@ -540,23 +659,16 @@ async def setParticipantDictValue(interaction, key, value):
         json.dump(serverDict, f, indent=4)
 
 
-async def getHeroData(heroName, memberId):
+async def getHeroData(heroName, heroClass, memberId):
 
-    ethereumWallet = await getMemberDictValue(memberId, 'ethereumWallet')
-    polygonWallet = await getMemberDictValue(memberId, 'polygonWallet')
+    wallets = await getMemberValue(memberId, 'wallets')
+    wallet = wallets[0]
 
-    print(heroName)
-    print(memberId)
-    
-    if 'Knight' in heroName:
-        print('in getHeroData - knight')
-        walletKnights = await getWalletKnights(ethereumWallet)
-        print(walletKnights)
+    if 'knight' in heroClass:
+        walletKnights = await getWalletKnights(wallet)
         heroData = next((v for v in walletKnights.values() if v['name'] == heroName), None)
-    if 'Druid' in heroName:
-        print('in getHeroData - Druid')
-        walletDruids = await getWalletDruids(polygonWallet)
-        print(walletDruids)
+    if 'druid' in heroClass:
+        walletDruids = await getWalletDruids(wallet)
         heroData = next((v for v in walletDruids.values() if v['name'] == heroName), None)
     return(heroData)
     
@@ -651,7 +763,6 @@ async def getWalletDruids(walletAddress):
 async def fetch_nfts(wallet_address, chain, nft_contract):
 
     #So, our API does return the required results, but it is not on the first page. We return up to 100 results per page, but since that wallet has more than 100, it is needed to go to the next pages. That code also filters only the nft contract you showed.
-    
     f = open("tokens")
     s = f.read()
     tokensDict = json.loads(s)
@@ -708,38 +819,80 @@ async def getRemainingPlayer():
         health = participants[str(participant)]['health']
         if int(health) > 0:
             heroName = participants[str(participant)]['heroName']
+            heroClass = participants[str(participant)]['heroClass']
             memberName = participants[str(participant)]['memberName']
             memberId = participants[str(participant)]['memberId']
             heroImage = participants[str(participant)]['heroImage']
 
-    return(heroName, memberName, memberId, heroImage)
+    return(heroName, heroClass, memberName, memberId, heroImage)
+
+
+
+async def getPlayerWithMostHealth():
+    # Load the server dictionary from the file
+    with open("serverDict", "r") as f:
+        serverDict = json.loads(f.read())
+    
+    participants = serverDict["participantsDict"]
+
+    # Initialize variables to keep track of the participant with the highest health
+    max_health = None
+    best_participant = None
+
+    # Iterate through participants to find the one with the highest health
+    for participant in participants:
+        health = int(participants[str(participant)]['health'])
+        
+        if max_health is None or health > max_health:
+            max_health = health
+            best_participant = participants[str(participant)]
+
+    if best_participant:
+        heroName = best_participant['heroName']
+        memberName = best_participant['memberName']
+        memberId = best_participant['memberId']
+        heroImage = best_participant['heroImage']
+
+        return (heroName, memberName, memberId, heroImage, max_health)
+    else:
+        return None  # Handle the case where no participants are found
+    
 
 async def getHeroOptions(memberId):
 
-    ethereumWallet = await getMemberDictValue(memberId, 'ethereumWallet')
-    polygonWallet = await getMemberDictValue(memberId, 'polygonWallet')
+    wallets = await getMemberValue(memberId, 'wallets')
+    wallet = wallets[0]
+    print(wallet)
 
     options = [[]]
     i = 0
-    if polygonWallet != 'false':
-        walletDruids = await getWalletDruids(polygonWallet)
-        for key, value in walletDruids.items():
-            attack = value['attack']
-            defence = value['defence']
-            options[i].append(discord.SelectOption(label=value['name'], description='Attack: '+attack+' | Defence: '+defence, emoji='⚗️'))
-            if len(options[i]) >= 25:
-                i += 1
-                options.append([])
+    walletDruids = await getWalletDruids(wallet)
+    for idx, (key, value) in enumerate(walletDruids.items()):
+        attack = value['attack']
+        defence = value['defence']
+        heroClass = 'druid'
+        uniqueHeroClass = f"{heroClass}_{idx}"  # Append index to make it unique - discord requires value param to be unique
 
-    if ethereumWallet != 'false':
-        walletKnights = await getWalletKnights(ethereumWallet)
-        for key, value in walletKnights.items():
-            attack = value['attack']
-            defence = value['defence']
-            options[i].append(discord.SelectOption(label=value['name'], description='Attack: '+attack+' | Defence: '+defence, emoji='⚔️'))
-            if len(options[i]) >= 25:
-                i += 1
-                options.append([])
+        options[i].append(discord.SelectOption(label=value['name'], description='Attack: '+attack+' | Defence: '+defence, emoji='⚗️', value=uniqueHeroClass,))
+
+        if len(options[i]) >= 25:
+            i += 1
+            options.append([])
+
+
+    walletKnights = await getWalletKnights(wallet)
+    for idx, (key, value) in enumerate(walletKnights.items()):
+        attack = value['attack']
+        defence = value['defence']
+        heroClass = 'knight'
+        uniqueHeroClass = f"{heroClass}_{idx}"  # Append index to make it unique - discord requires value param to be unique
+        
+        options[i].append(discord.SelectOption(label=value['name'], description='Attack: '+attack+' | Defence: '+defence, emoji='⚔️', value=uniqueHeroClass))
+        
+        if len(options[i]) >= 25:
+            i += 1
+            options.append([])
+
     return(options)
     
 
@@ -769,20 +922,21 @@ async def getVictimOptions():
     return(options)
 
 
-async def getIdFromName(memberName):
+async def getIdFromName(discordName):
 
-    
-    f = open("memberAccounts")
+    f = open("serverDict")
     s = f.read()
-    membersDict = json.loads(s)
+    serverDict = json.loads(s)
 
-    key = 'discordName'
+    # Get the participants dictionary
+    participants_dict = serverDict.get('participantsDict', {})
 
-    for account in membersDict:
-        if str(memberName) == str(membersDict[account]['discordName']):
-             
-            value = str(account)
-            return(value)
+    # Iterate through participants and find the matching discordName
+    for discordId, member_data in participants_dict.items():
+        if member_data.get('memberName') == discordName:
+            print(f"Discord ID for {discordName}: {discordId}")
+            return discordId
+
 
 async def getPlayerNames():
 
@@ -904,53 +1058,6 @@ async def getServerDictValue(key, nestedKey = 'False'):
     return(value)
 
 
-        
-async def setMemberDictValue(memberId, key, value, nestedKey = 'False'):
-    
-    f = open("memberAccounts")
-    s = f.read()
-    membersDict = json.loads(s)
-
-    if nestedKey == 'False':
-        membersDict[str(memberId)][key] = value
-    else:
-        membersDict[str(memberId)][key][nestedKey] = value
-        
-    with open('memberAccounts', 'w') as f:
-            json.dump(membersDict, f, indent=4)
-
-
-async def getMemberDictValue(memberId, key, nestedKey = 'False'):
-    
-    f = open("memberAccounts")
-    s = f.read()
-    membersDict = json.loads(s)
-    
-    if key not in membersDict[str(memberId)].keys():
-        return('Not There') #cause shares are only created when member earns shares
-        
-    if nestedKey == 'False':
-        value = membersDict[str(memberId)][key]
-    else:
-        value = membersDict[str(memberId)][key][nestedKey]
-    return(value)
-
-
-async def getAllMemberDictValues(key):
-
-            f = open("memberAccounts")
-            s = f.read()
-            membersDict = json.loads(s)
-
-            list = []
-            for memberId in membersDict:
-                value = membersDict[str(memberId)][key]
-                list.append(value)
-
-            return(list)
-                  
-
-
 
 async def getParticipantValue(memberId, key):
 
@@ -974,39 +1081,158 @@ async def setParticipantValue(memberId, key, value):
         json.dump(serverDict, f, indent=4)
 
 
-#Create new member account - takes message
-async def newMemberFunc(memberId, memberName):
-
-    f = open("memberAccounts")
-    s = f.read()
-    membersDict = json.loads(s)
-
-    try:
-        membersDict[str(memberId)]
-        return
-    except:
-        membersDict[str(memberId)] = {}
-        membersDict[str(memberId)]['discordName'] = str(memberName)
-        membersDict[str(memberId)]['discordId'] = str(memberId)
-        membersDict[str(memberId)]['wins'] = '0'
-        membersDict[str(memberId)]['losses'] = '0'
-        membersDict[str(memberId)]['polygonWallet'] = 'false'
-        membersDict[str(memberId)]['ethereumWallet'] = 'false'
-        membersDict[str(memberId)]['heroOptionsPosition'] = '0'
-
-        with open('memberAccounts', 'w') as f:
-            json.dump(membersDict, f, indent=4)
-
-
-
                   
 async def extractAndSortWins():
 
-    f = open("memberAccounts")
-    s = f.read()
-    membersDict = json.loads(s)
+    allMembers = await getAllMembers()
     # Extract "Wins" and "discordName" values into a list of tuples
-    wins_and_names = [(int(data["wins"]), data["discordName"]) for data in membersDict.values() if int(data["wins"]) > 0]
+    wins_and_names = [(int(data["wins"]), data["discordName"]) for data in allMembers.values() if int(data["wins"]) > 0]
     # Sort the list of tuples based on the "Wins" value
     sorted_wins_and_names = sorted(wins_and_names, reverse=True)
     return sorted_wins_and_names
+
+
+
+
+async def getAllMembers():
+    url = 'https://www.heroesnft.app:3002/api/members'  # Endpoint for getting all members
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                response.raise_for_status()  # Raises an HTTPError for unsuccessful status codes
+                
+                # Parse JSON response
+                data = await response.json()
+                print(f"Members Data: {data}")
+                return data
+
+    except aiohttp.ClientResponseError as http_err:
+        print(f'HTTP error occurred: {http_err}')
+    except Exception as err:
+        print(f'Other error occurred: {err}')
+
+
+async def getMember(discord_id):
+    url = f'https://www.heroesnft.app:3002/api/member/{discord_id}'
+    
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                response.raise_for_status()  # Raises an HTTPError if the HTTP request returned an unsuccessful status code
+                member_data = await response.json()  # Parse the JSON response into a dictionary
+                return member_data
+
+    except aiohttp.ClientResponseError as http_err:
+        print(f'HTTP error occurred: {http_err}')
+    except Exception as err:
+        print(f'Other error occurred: {err}')
+
+
+
+async def getMemberValue(discordId, key):
+    url = f'https://www.heroesnft.app:3002/api/member/{discordId}/{key}'  # Use f-string for URL formatting
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:  # Use GET for fetching data
+                response.raise_for_status()  # Raises an HTTPError if the HTTP request returned an unsuccessful status code
+                
+                # Parse JSON response
+                data = await response.json()
+                print(f"Value for {key}: {data.get(key)}")
+                return data.get(key)
+
+    except aiohttp.ClientResponseError as http_err:
+        print(f'HTTP error occurred: {http_err}')
+    except Exception as err:
+        print(f'Other error occurred: {err}')
+
+
+
+async def updateMemberValue(discordId, key, newValue):
+    url = f'https://www.heroesnft.app:3002/api/member/update'  # Use f-string for URL formatting
+    payload = {
+        'discordId': discordId,
+        'key': key,
+        'newValue': newValue
+    }  # Create a payload with key and value to send in the request body
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.put(url, json=payload) as response:  # Use PUT to update data
+                response.raise_for_status()  # Raises an HTTPError if the HTTP request returned an unsuccessful status code
+                
+                # Parse JSON response or handle success message
+                data = await response.text()
+                print(f"Member {discordId} updated with {key}: {newValue}")
+                return data
+
+    except aiohttp.ClientResponseError as http_err:
+        print(f'HTTP error occurred: {http_err}')
+    except Exception as err:
+        print(f'Other error occurred: {err}')
+
+
+
+async def getAllMembers():
+    url = f'https://www.heroesnft.app:3002/api/members'
+    
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                response.raise_for_status()  # Raises an HTTPError if the HTTP request returned an unsuccessful status code
+                members_data = await response.json()  # Parse the JSON response into a dictionary
+                return members_data
+
+    except aiohttp.ClientResponseError as http_err:
+        print(f'HTTP error occurred: {http_err}')
+    except Exception as err:
+        print(f'Other error occurred: {err}')
+
+
+
+async def getMemberIds():
+    url = f'https://www.heroesnft.app:3002/api/members/ids'
+    
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                response.raise_for_status()  # Raises an HTTPError if the HTTP request returned an unsuccessful status code
+                response_data = await response.json()  # Parse the JSON response into a dictionary
+                return response_data
+
+    except aiohttp.ClientResponseError as http_err:
+        print(f'HTTP error occurred: {http_err}')
+    except Exception as err:
+        print(f'Other error occurred: {err}')
+        return None
+    
+
+async def sendHgld(recipient_address, amount):
+    api_url = "https://www.heroesnft.app:3002/api/send-hgld"
+
+    f = open("tokens")
+    s = f.read()
+    tokensDict = json.loads(s)
+    hohServerApiKey = tokensDict["hohServerApiKey"]
+
+    headers = {
+        'Content-Type': 'application/json',
+        'x-api-key': hohServerApiKey
+    }
+    payload = {
+        'recipientAddress': recipient_address,
+        'amount': amount
+    }
+
+    try:
+        response = requests.post(api_url, headers=headers, json=payload)
+        response.raise_for_status()
+        response_data = response.json()
+
+        if response_data.get("success") and "transactionHash" in response_data:
+            return response_data["transactionHash"]
+        else:
+            return {'error': response_data.get("message", "Unknown error")}
+    except requests.exceptions.RequestException as e:
+        return {'error': str(e)}

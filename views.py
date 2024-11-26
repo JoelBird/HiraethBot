@@ -30,6 +30,16 @@ class joinBattle(discord.ui.View):
     async def button(self, interaction: discord.Interaction, button: discord.ui.Button):            
         await interaction.response.defer(ephemeral=True)
 
+        member = await botFunctions.getMember(interaction.user.id)
+        if member is None:
+            embed = discord.Embed(title='You have not connected your account', description=f'Please connect at heroesnft.app to join the battle', color=colorGold)
+            view = discord.ui.View()
+            url = 'https://heroesnft.app'
+            view.add_item(discord.ui.Button(label = 'heroesnft.app', style = discord.ButtonStyle.link, url = url))
+            
+            await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+            return
+
         battleMode = await botFunctions.getServerDictValue('battleMode')
         ghostBattleStarterId = await botFunctions.getServerDictValue('ghostBattleStarterId')
         if battleMode == 'ghost' and str(interaction.user.id) != str(ghostBattleStarterId):
@@ -44,16 +54,6 @@ class joinBattle(discord.ui.View):
             await interaction.followup.send(embed=embed, ephemeral = True)
             return
         
-        await botFunctions.newMemberFunc(str(interaction.user.id), str(interaction.user.name))
-
-        ethereumWallet = await botFunctions.getMemberDictValue(interaction.user.id, 'ethereumWallet')
-        polygonWallet = await botFunctions.getMemberDictValue(interaction.user.id, 'polygonWallet')
-
-        if ethereumWallet and polygonWallet == 'false':
-            embed = discord.Embed(title='You have not connected a wallet', description='Use `/connect_wallets`', color=colorBlack)
-            await interaction.followup.send(embed=embed, ephemeral = True)
-            return
-        
         options = await botFunctions.getHeroOptions(interaction.user.id)
         options2 = options[0]
         totalHeroes = len(options2)
@@ -63,20 +63,20 @@ class joinBattle(discord.ui.View):
             await interaction.followup.send(embed=embed, ephemeral = True)
             return
     
-        await botFunctions.setMemberDictValue(interaction.user.id, 'heroOptionsPosition', '0')
+        await botFunctions.update_hero_options_position(interaction.user.id, 0)
+        
         view = discord.ui.View()
         select = heroSelect(options=options2)
         view.add_item(select)
 
         if len(options) > 1:
-            button = theButton(label="➡️", custom_id='awdf2e1', style=discord.ButtonStyle.blurple)
+            button = theButton(label="➡️", custom_id='awdf312', style=discord.ButtonStyle.blurple)
             view.add_item(button)
 
         embed = discord.Embed(title='Select a hero', description='Select a hero to use in this battle with the dropdown below', color=colorRed)
         embed.set_thumbnail(url = "https://i.postimg.cc/wMJQnydT/fotor-ai-20240403211513.jpg")
 
         await interaction.followup.send(embed=embed, view=view, ephemeral = True)
-
 
 
     @discord.ui.button(custom_id = 'awdwadp2o', label='Participants', style=discord.ButtonStyle.blurple)
@@ -145,46 +145,54 @@ class heroSelect(discord.ui.Select):
     async def callback(self, interaction):
         await interaction.response.defer(ephemeral=True)
 
-        #await botFunctions.setServerDictValue(interaction.guild.id, 'participantsDict', cycledTimes, 'cycledTimes')
-        heroName = str(self.values[0])
-        heroData = await botFunctions.getHeroData(heroName, interaction.user.id)
-        
-        if 'Knight' in heroName:
-            embed = discord.Embed(title=heroName, description=f"Attack: {heroData['attack']}\nDefence: {heroData['defence']}\nRight Scabbard: {heroData['rightScabbard']}\nLeft Scabbard: {heroData['leftScabbard']}", color=colorBlack)
-            embed.set_image(url = str(heroData['image']))
+        uniqueHeroClass = self.values[0] #Only way that works to get label and name
+        for option in self.options:
+            if option.value == uniqueHeroClass:
+                heroName = option.label
+                break
 
-        if 'Druid' in heroName:
-            embed = discord.Embed(title=heroName, description=f"Attack: {heroData['attack']}\nDefence: {heroData['defence']}\nStaff: {heroData['staff']}\nSpell: {heroData['spell']}\nWeapon: {heroData['weapon']}", color=colorBlack)
+        heroData = await botFunctions.getHeroData(heroName, uniqueHeroClass, interaction.user.id)
+        
+        if 'knight' in uniqueHeroClass:
+            embed = discord.Embed(title=heroName, description=f"`Attack: {heroData['attack']}\nDefence: {heroData['defence']}\nRight Scabbard: {heroData['rightScabbard']}\nLeft Scabbard: {heroData['leftScabbard']}`", color=colorBlack)
             embed.set_image(url = str(heroData['image']))
+            embed.set_thumbnail(url = "https://i.postimg.cc/J7kFc3cP/knight-shield.png")
+
+        if 'druid' in uniqueHeroClass:
+            embed = discord.Embed(title=heroName, description=f"`Attack: {heroData['attack']}\nDefence: {heroData['defence']}\nStaff: {heroData['staff']}\nSpell: {heroData['spell']}\nWeapon: {heroData['weapon']}`", color=colorBlack)
+            embed.set_image(url = str(heroData['image']))
+            embed.set_thumbnail(url = "https://i.postimg.cc/8zDxCFvw/druid-orb.png")
 
         view = discord.ui.View()
         options = await botFunctions.getHeroOptions(interaction.user.id)
-        heroOptionsPosition = await botFunctions.getMemberDictValue(interaction.user.id, 'heroOptionsPosition')
-        options2 = options[int(heroOptionsPosition)]
+        currentHeroOptionsPosition = await botFunctions.get_hero_options_position(interaction.user.id)
+        options2 = options[int(currentHeroOptionsPosition)]
         select = heroSelect(options=options2)
         view.add_item(select)
 
-        if int(heroOptionsPosition) > 0:
+        if int(currentHeroOptionsPosition) > 0:
             button = theButton(label="⬅️", custom_id='dawd21', style=discord.ButtonStyle.blurple)
             view.add_item(button)
 
-        if int(heroOptionsPosition) + 1 < len(options):
+        if int(currentHeroOptionsPosition) + 1 < len(options):
             button = theButton(label="➡️", custom_id='awdf2e1', style=discord.ButtonStyle.blurple)
             view.add_item(button)
 
-        button = theButton(label="Select Hero", custom_id=heroName, style=discord.ButtonStyle.green)
+        button = theButton(label="Select Hero", custom_id='awdwadaf3g', heroName=heroName, uniqueHeroClass=uniqueHeroClass, style=discord.ButtonStyle.green)
         view.add_item(button)
 
         await interaction.followup.edit_message(message_id = interaction.message.id, embed=embed, view=view)
 
 
 class theButton(discord.ui.Button):
-    def __init__(self, label, custom_id, style) -> None:
+    def __init__(self, label, custom_id, style, heroName=None, uniqueHeroClass=None) -> None:
         super().__init__(
             label=label,
             custom_id=custom_id,
             style=style
         )
+        self.heroName = heroName
+        self.uniqueHeroClass = uniqueHeroClass
 
     async def callback(self, interaction: discord.Interaction):
         
@@ -193,8 +201,8 @@ class theButton(discord.ui.Button):
         if self.label == "Select Hero":
             await interaction.response.defer(ephemeral=True)
 
-            heroName = str(self.custom_id)
-            isAlreadyParticipant = await botFunctions.newParticipant(interaction.user.name, interaction.user.id, heroName)
+            heroName = str(self.heroName)
+            isAlreadyParticipant = await botFunctions.newParticipant(interaction.user.name, interaction.user.id, self.heroName, self.uniqueHeroClass)
             battleMode = await botFunctions.getServerDictValue('battleMode')
             if isAlreadyParticipant == False and battleMode != 'ghost' and battleMode != '1v1':
                 await botFunctions.updateBattleEmbed(interaction)
@@ -261,7 +269,7 @@ class theButton(discord.ui.Button):
                 await interaction.followup.send(embed=embed, ephemeral = True)
                 return
 
-            random_number = random.randint(0, 100)
+            random_number = random.randint(0, 50)
             await botFunctions.setParticipantDictValue(interaction, 'defenceRoll', random_number)
             embed = discord.Embed(title="",description=f'You have rolled `{random_number}` for Defence', color=colorCyan)
             await interaction.followup.send(embed=embed, ephemeral = True)
@@ -272,20 +280,19 @@ class theButton(discord.ui.Button):
 
             view = discord.ui.View()
             options = await botFunctions.getHeroOptions(interaction.user.id)
-            heroOptionsPosition = await botFunctions.getMemberDictValue(interaction.user.id, 'heroOptionsPosition')
-            if int(heroOptionsPosition) != 0:
-                heroOptionsPosition = int(heroOptionsPosition) - 1
-                await botFunctions.setMemberDictValue(interaction.user.id, 'heroOptionsPosition', str(heroOptionsPosition))
+            currentHeroOptionsPosition = await botFunctions.get_hero_options_position(interaction.user.id)
+            updatedHeroOptionsPosition = int(currentHeroOptionsPosition) - 1
+            await botFunctions.update_hero_options_position(interaction.user.id, updatedHeroOptionsPosition)
 
-            options = options[int(heroOptionsPosition)]
+            options = options[int(updatedHeroOptionsPosition)]
             select = heroSelect(options=options)
             view.add_item(select)
 
-            if int(heroOptionsPosition) > 0:
+            if int(updatedHeroOptionsPosition) > 0:
                 button = theButton(label="⬅️", custom_id='dawd21', style=discord.ButtonStyle.blurple)
                 view.add_item(button)
 
-            if int(heroOptionsPosition) + 1 < len(options):
+            if int(updatedHeroOptionsPosition) + 1 < len(options):
                 button = theButton(label="➡️", custom_id='awdf2e1', style=discord.ButtonStyle.blurple)
                 view.add_item(button)
 
@@ -301,20 +308,20 @@ class theButton(discord.ui.Button):
 
             view = discord.ui.View()
             options = await botFunctions.getHeroOptions(interaction.user.id)
-            heroOptionsPosition = await botFunctions.getMemberDictValue(interaction.user.id, 'heroOptionsPosition')
             
-            heroOptionsPosition = int(heroOptionsPosition) + 1
-            await botFunctions.setMemberDictValue(interaction.user.id, 'heroOptionsPosition', str(heroOptionsPosition))
+            currentHeroOptionsPosition = await botFunctions.get_hero_options_position(interaction.user.id)
+            UpdatedHeroOptionsPosition = int(currentHeroOptionsPosition) + 1
+            await botFunctions.update_hero_options_position(interaction.user.id, UpdatedHeroOptionsPosition)
 
-            options2 = options[int(heroOptionsPosition)]
+            options2 = options[int(UpdatedHeroOptionsPosition)]
             select = heroSelect(options=options2)
             view.add_item(select)
 
-            if int(heroOptionsPosition) > 0:
+            if int(UpdatedHeroOptionsPosition) > 0:
                 button = theButton(label="⬅️", custom_id='dawd21', style=discord.ButtonStyle.blurple)
                 view.add_item(button)
 
-            if int(heroOptionsPosition) + 1 < len(options):
+            if int(UpdatedHeroOptionsPosition) + 1 < len(options):
                 button = theButton(label="➡️", custom_id='awdf2e1', style=discord.ButtonStyle.blurple)
                 view.add_item(button)
 

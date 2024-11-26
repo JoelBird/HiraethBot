@@ -136,51 +136,6 @@ def slashCommands(tree):
         await interaction.followup.send(embed=embed, ephemeral = True)
     
 
-    @tree.command(name='connect_wallets', description='Connect your Wallets for PVP')
-    async def connect_wallets(interaction: discord.Interaction, polygon: str = None, ethereum: str = None):
-        
-        await interaction.response.defer(ephemeral=True)
-        await botFunctions.newMemberFunc(str(interaction.user.id), str(interaction.user.name))
-
-        if polygon == None and ethereum == None:
-            embed = discord.Embed(title='',description='please insert a polygon or ethereum wallet address to register your Heroes for PVP', color=colorBlack)
-            await interaction.followup.send(embed=embed, ephemeral = True)
-            return
-
-        if polygon != None:
-            web3Polygon = await botFunctions.getWeb3('polygon')
-            if not web3Polygon.is_address(polygon):
-                embed = discord.Embed(title='',description='You did not insert a valid polygon address', color=colorBlack)
-                await interaction.followup.send(embed=embed, ephemeral = True)
-                return
-            
-            if not web3Polygon.is_checksum_address(polygon): #checksum is correct format for addresses, they need capitalisation on certain letters, some people dont add
-                polygon = web3Polygon.to_checksum_address(polygon)
-            
-            await botFunctions.setMemberDictValue(interaction.user.id, 'polygonWallet', polygon)
-            data = await botFunctions.getWalletDruids(polygon)
-            amountOfDruids = str(len(data))
-            embed = discord.Embed(description='We detected '+amountOfDruids+' Druids in your wallet', color=colorGreen)
-            await interaction.followup.send(embed=embed, ephemeral = True)
-        
-        if ethereum != None:
-            web3Ethereum = await botFunctions.getWeb3('ethereum')
-            if not web3Ethereum.is_address(ethereum):
-                embed = discord.Embed(title='',description='You did not insert a valid ethereum address', color=colorBlack)
-                await interaction.followup.send(embed=embed, ephemeral = True)
-                return
-
-            if not web3Ethereum.is_checksum_address(ethereum):
-                ethereum = web3Ethereum.to_checksum_address(ethereum)
-            
-            await botFunctions.setMemberDictValue(interaction.user.id, 'ethereumWallet', ethereum)
-            data = await botFunctions.getWalletKnights(ethereum)
-            amountOfKnights = str(len(data))
-            embed = discord.Embed(description='We detected '+amountOfKnights+' Knights in your wallet', color=colorGreen)
-            await interaction.followup.send(embed=embed, ephemeral = True)
-
-
-
     @tree.command(name='cancel_battle', description='Cancel the current battle')
     async def cancel_battle(interaction: discord.Interaction):
         
@@ -220,14 +175,22 @@ def slashCommands(tree):
         
         await interaction.response.defer(ephemeral=True)
 
+        member = await botFunctions.getMember(interaction.user.id)
+        if member is None:
+            embed = discord.Embed(title='You have not connected your account', description=f'Please connect at heroesnft.app to start a battle', color=colorGold)
+            view = discord.ui.View()
+            url = 'https://heroesnft.app'
+            view.add_item(discord.ui.Button(label = 'heroesnft.app', style = discord.ButtonStyle.link, url = url))
+            
+            await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+            return
+
         battleInSession = await botFunctions.getServerDictValue('battleInSession')
         if battleInSession == 'true':
             embed = discord.Embed(title="",description="A battle has already started", color=colorBlack)
             await interaction.followup.send(embed=embed, ephemeral = True)
             return
             
-        await botFunctions.newMemberFunc(str(interaction.user.id), str(interaction.user.name))
-
         nowUnix = await botFunctions.getNowUnix()
         secondsToStart = minutes_to_start * 60
         battleStartUnix = nowUnix + secondsToStart
@@ -238,9 +201,9 @@ def slashCommands(tree):
         dict[interaction.user.id] = {}
 
         embed = discord.Embed(title="",description="# A battle has started!\n`"+interaction.user.name + "` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: 0`\n`Round 1 Begins: `"+timestamp, color=colorRed)
-        embed.set_image(url = "https://i.postimg.cc/FKBmytTy/battlebegins3.jpg")
-
-        message = await interaction.channel.send(embed=embed, view = views.joinBattle())
+        file = discord.File("banner_vs.png", filename="banner_vs.png")
+        message = await interaction.channel.send(file=file, embed=embed, view=views.joinBattle())
+        
         await botFunctions.setServerDictValue('battleMessageId', str(message.id))
         await botFunctions.setServerDictValue('battleChannelId', str(message.channel.id))
         await botFunctions.setServerDictValue('battleInSession', 'true')
@@ -266,6 +229,16 @@ def slashCommands(tree):
         
         await interaction.response.defer(ephemeral=True)
 
+        member = await botFunctions.getMember(interaction.user.id)
+        if member is None:
+            embed = discord.Embed(title='You have not connected your account', description=f'Please connect at heroesnft.app to start a battle', color=colorGold)
+            view = discord.ui.View()
+            url = 'https://heroesnft.app'
+            view.add_item(discord.ui.Button(label = 'heroesnft.app', style = discord.ButtonStyle.link, url = url))
+            
+            await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+            return
+
         isStaff, embed = await botFunctions.isStaff(interaction.user.id)
         if isStaff == 'false':
             await interaction.followup.send(embed=embed, ephemeral = True)
@@ -283,9 +256,9 @@ def slashCommands(tree):
             return
 
         embed = discord.Embed(title="",description=f"# A battle has started!\n`{interaction.user.name}` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: 0/{str(participants_to_start)}`\n`Round 1 Begins when {str(participants_to_start)}/{str(participants_to_start)} participants have joined`", color=colorRed)
-        embed.set_image(url = "https://i.postimg.cc/FKBmytTy/battlebegins3.jpg")
+        file = discord.File("banner_vs.png", filename="banner_vs.png")
+        message = await interaction.channel.send(file=file, embed=embed, view=views.joinBattle())
 
-        message = await interaction.channel.send(embed=embed, view = views.joinBattle())
 
         await botFunctions.setServerDictValue('battleMessageId', str(message.id))
         await botFunctions.setServerDictValue('battleChannelId', str(message.channel.id))
@@ -299,6 +272,16 @@ def slashCommands(tree):
     async def battle_set(interaction: discord.Interaction):
         
         await interaction.response.defer(ephemeral=True)
+        
+        member = await botFunctions.getMember(interaction.user.id)
+        if member is None:
+            embed = discord.Embed(title='You have not connected your account', description=f'Please connect at heroesnft.app to set a battle', color=colorGold)
+            view = discord.ui.View()
+            url = 'https://heroesnft.app'
+            view.add_item(discord.ui.Button(label = 'heroesnft.app', style = discord.ButtonStyle.link, url = url))
+            
+            await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+            return
 
         isStaff, embed = await botFunctions.isStaff(interaction.user.id)
         if isStaff == 'false':
@@ -314,9 +297,8 @@ def slashCommands(tree):
         numberOfParticipants = await botFunctions.getAllParticipantIds()
         numberOfParticipants = str(len(numberOfParticipants))
         embed = discord.Embed(title="",description=f"# A battle has started!\n`{interaction.user.name}` has started a battle\n## Rules:\nAt the start of every Round, each player is required to:\n\n⚔️ **Roll a dice for Attack**\n🛡️ **Roll a dice for Defence**\n💀 **Select a Hero to Attack**\n\nThe bot will announce the outcome of every Hero's actions during the round\n\n🏆 **The last Hero remaining is Victorious!**\n\n`Participants: {numberOfParticipants}`\n`Round 1 Begins when staff runs /battle_start`", color=colorRed)
-        embed.set_image(url = "https://i.postimg.cc/FKBmytTy/battlebegins3.jpg")
-
-        message = await interaction.channel.send(embed=embed, view = views.joinBattle())
+        file = discord.File("banner_vs.png", filename="banner_vs.png")
+        message = await interaction.channel.send(file=file, embed=embed, view=views.joinBattle())
 
         await botFunctions.setServerDictValue('battleMessageId', str(message.id))
         await botFunctions.setServerDictValue('battleChannelId', str(message.channel.id))
@@ -329,6 +311,16 @@ def slashCommands(tree):
     async def battle_start(interaction: discord.Interaction):
         
         await interaction.response.defer(ephemeral=True)
+
+        member = await botFunctions.getMember(interaction.user.id)
+        if member is None:
+            embed = discord.Embed(title='You have not connected your account', description=f'Please connect at heroesnft.app to start a battle', color=colorGold)
+            view = discord.ui.View()
+            url = 'https://heroesnft.app'
+            view.add_item(discord.ui.Button(label = 'heroesnft.app', style = discord.ButtonStyle.link, url = url))
+            
+            await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+            return
 
         isStaff, embed = await botFunctions.isStaff(interaction.user.id)
         if isStaff == 'false':
@@ -359,6 +351,17 @@ def slashCommands(tree):
     async def battle_ghost(interaction: discord.Interaction):
         
         await interaction.response.defer(ephemeral=False)
+        
+
+        member = await botFunctions.getMember(interaction.user.id)
+        if member is None:
+            embed = discord.Embed(title='You have not connected your account', description=f'Please connect at heroesnft.app to start a battle', color=colorGold)
+            view = discord.ui.View()
+            url = 'https://heroesnft.app'
+            view.add_item(discord.ui.Button(label = 'heroesnft.app', style = discord.ButtonStyle.link, url = url))
+            
+            await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+            return
 
         battleInSession = await botFunctions.getServerDictValue('battleInSession')
         if battleInSession == 'true':
@@ -366,8 +369,8 @@ def slashCommands(tree):
             await interaction.followup.send(embed=embed, ephemeral = True)
             return
 
-        memberName, memberId, heroName = await botFunctions.getRandomHero(interaction.user.id)
-        isAlreadyParticipant = await botFunctions.newParticipant(memberName, memberId, heroName)
+        memberName, memberId, heroName, heroClass = await botFunctions.getRandomHero(interaction.user.id)
+        isAlreadyParticipant = await botFunctions.newParticipant(memberName, memberId, heroName, heroClass)
         attackerNameString = '<@' + str(interaction.user.id) + '>'
         victimNameString = '<@' + str(memberId) + '>'
         
@@ -388,6 +391,16 @@ def slashCommands(tree):
     async def battle_1v1(interaction: discord.Interaction, member: discord.Member):
         
         await interaction.response.defer(ephemeral=False)
+
+        member = await botFunctions.getMember(interaction.user.id)
+        if member is None:
+            embed = discord.Embed(title='You have not connected your account', description=f'Please connect at heroesnft.app to start a battle', color=colorGold)
+            view = discord.ui.View()
+            url = 'https://heroesnft.app'
+            view.add_item(discord.ui.Button(label = 'heroesnft.app', style = discord.ButtonStyle.link, url = url))
+            
+            await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+            return
 
         battleInSession = await botFunctions.getServerDictValue('battleInSession')
         if battleInSession == 'true':

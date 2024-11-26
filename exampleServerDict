@@ -1,0 +1,53 @@
+{
+    "participantsDict": {
+        "960601733556482108": {
+            "attackRoll": "false",
+            "defenceRoll": "false",
+            "victimName": "false",
+            "health": "100",
+            "memberName": "rayjon_openproj",
+            "memberId": "960601733556482108",
+            "heroName": "Druid #373",
+            "heroAttack": "4",
+            "heroDefence": "4",
+            "heroImage": "https://bafybeidf2oeuabwibvtovocb3aac3xobiqpod62dc6cxzhfi43bcit64my.ipfs.nftstorage.link/",
+            "heroClass": "druid",
+            "weapon1": "Galabans-Cane",
+            "weapon2": "Rainbow-Stub"
+        },
+        "433648637763911680": {
+            "attackRoll": "false",
+            "defenceRoll": "false",
+            "victimName": "false",
+            "health": "100",
+            "memberName": "joelbird.",
+            "memberId": "433648637763911680",
+            "heroName": "Knights of Hiraeth #326",
+            "heroAttack": "4",
+            "heroDefence": "4",
+            "heroImage": "https://bafybeibuaivgzdydcco27645kowurcf5425inok4snnbbrwiyb5yrx43k4.ipfs.nftstorage.link/",
+            "heroClass": "knight",
+            "weapon1": "Morning Star",
+            "weapon2": "None"
+        }
+    },
+    "battleStartUnix": "false",
+    "battleMessageId": "1310907834770128927",
+    "battleChannelId": "1310659020335349913",
+    "battleInSession": "true",
+    "battleMode": "participants",
+    "participantsToStart": "2",
+    "battleSet": "false",
+    "ghostBattleStarterId": "false",
+    "druidWins": "9",
+    "knightWins": "8",
+    "druidTournamentWins": "0",
+    "knightTournamentWins": "0",
+    "tournamentName": "false",
+    "isTournamentActive": "false",
+    "staff": [
+        "433648637763911680"
+    ],
+    "1v1BattleStarterId": "false",
+    "1v1BattleVictimId": "false"
+}
