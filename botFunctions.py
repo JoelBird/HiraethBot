@@ -473,13 +473,34 @@ async def autofillForAbsentPlayers():
         victimName = participants[str(participant)]['victimName']
         if victimName == 'false':
             playerName = participants[str(participant)]['memberName']
-            listOfPlayerNames = await getPlayerNames()
-            listOfPlayerNames.remove(playerName)
-            randomPlayer = random.choice(listOfPlayerNames)
+            listOfAlivePlayerNames = await getAlivePlayerNames()
+            if playerName in listOfAlivePlayerNames:
+                listOfAlivePlayerNames.remove(playerName)
+
+            randomPlayer = random.choice(listOfAlivePlayerNames)
             participants[str(participant)]['victimName'] = randomPlayer
         
     with open('serverDict', 'w') as f:
         json.dump(serverDict, f, indent=4)
+
+
+
+async def getAlivePlayerNames():
+
+    f = open("serverDict")
+    s = f.read()
+    serverDict = json.loads(s)
+
+    listOfNames = []
+    participants = serverDict["participantsDict"]
+
+    for participant in participants:
+        memberName = participants[str(participant)]['memberName']
+        memberHealth = participants[str(participant)]['health']
+        if int(memberHealth) > 0:
+            listOfNames.append(memberName)
+ 
+    return(listOfNames)
         
 
 async def heroesAttackFunc(channel):
