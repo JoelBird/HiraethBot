@@ -73,15 +73,18 @@ async def startBattle(bot):
     battleChannel = bot.get_channel(battleChannelId)
     
     view = discord.ui.View()
-    button = views.theButton(label="Roll For Attack", custom_id='awdg423d', style=discord.ButtonStyle.red)
-    view.add_item(button)
+    # button = views.theButton(label="Roll For Attack", custom_id='awdg423d', style=discord.ButtonStyle.red)
+    # view.add_item(button)
 
-    button = views.theButton(label="Roll For Defence", custom_id='awdwad1312', style=discord.ButtonStyle.blurple)
-    view.add_item(button)
+    # button = views.theButton(label="Roll For Defence", custom_id='awdwad1312', style=discord.ButtonStyle.blurple)
+    # view.add_item(button)
 
     options = await getVictimOptions()
     select = views.victimSelect(options=options)
     view.add_item(select)
+
+    button = views.theButton(label="Use A Spell", custom_id='d31f42gd132ww', style=discord.ButtonStyle.blurple)
+    view.add_item(button)
 
     participantNames = ''
     participantIds = await getAllParticipantIds()
@@ -100,7 +103,7 @@ async def startBattle(bot):
     while numberOfRemainingPlayers >= 2:
         
         nowUnix = await getNowUnix()
-        end = nowUnix + 15
+        end = nowUnix + 20
         timestamp = await unixToTimestamp(end)
 
         phrases = ["🪨 Let's Rock!", "🔥 It's getting heated! 🔥", "👊 Fight!", "💯 This is Heroes Of Hiraeth!", "😏 Who wants $HGLD?", "🪖 HOO-HAA!!", "🏆 Winner takes all!", "⏰ Time to fight!"]
@@ -148,7 +151,7 @@ async def startBattle(bot):
             embed.set_image(url = "https://i.postimg.cc/gjPMj57Q/roundxxx.png")
         await battleChannel.send(embed=embed, view = view)
 
-        await asyncio.sleep(15)
+        await asyncio.sleep(20)
 
         await autofillForAbsentPlayers()
 
@@ -521,6 +524,8 @@ async def heroesAttackFunc(channel):
         heroName = participants[str(key)]['heroName']
         heroImage = participants[str(key)]['heroImage']
         memberName = participants[str(key)]['memberName']
+        memberId = participants[str(key)]['memberId']
+        spellName = participants[str(key)]['spellName']
         attackRoll = participants[str(key)]['attackRoll']
         defenceRoll = participants[str(key)]['defenceRoll']
         victimName = participants[str(key)]['victimName']
@@ -579,9 +584,28 @@ async def heroesAttackFunc(channel):
             await channel.send(embed=alreadyDeadEmbed)
             await asyncio.sleep(5)
             continue
+
+        spellDamage = '0'
+        if spellName == 'Acid Rain':
+            spellDamage = '10'
+            spellUrl = "https://i.postimg.cc/0QLTnjGj/acid-rain-spell.webp"
+            serverSpellName = 'acidRain'
+        if spellName == 'Fire Ball':
+            spellDamage = '20'
+            spellUrl = "https://i.postimg.cc/Z5VXgVP1/fire-bolt-spell.webp"
+            serverSpellName = 'fireBall'
+        if spellName == "Lightning Strike":
+            spellUrl = "https://i.postimg.cc/yNGt6xbj/lightning-bolt-spell.webp"
+            spellDamage = '30'
+            serverSpellName = 'lightningBolt'
+
     
-        totalAttack = int(attackRoll) + int(heroAttack)
-        attackEmbed = discord.Embed(title=f"{memberName} Attacks {victimName}", description=f"`{heroName}` {randomAttackPhrase} `{victimHeroName}` with their `{randomWeapon}`\n\n`Attack Roll: {attackRoll}`\n`{heroName} Attack: {heroAttack}`\n`Total Attack: {str(totalAttack)}`", color=colorRed)
+        totalAttack = int(attackRoll) + int(heroAttack) + int(spellDamage)
+        if spellName == 'false':
+            attackEmbed = discord.Embed(title=f"{memberName} Attacks {victimName}", description=f"`{heroName}` {randomAttackPhrase} `{victimHeroName}` with their `{randomWeapon}`\n\n`Attack Roll: {attackRoll}`\n`{heroName} Attack: {heroAttack}`\n`Total Attack: {str(totalAttack)}`", color=colorRed)
+        else:
+            attackEmbed = discord.Embed(title=f"{memberName} Attacks {victimName}", description=f"`{heroName}` uses `{spellName}!`\n\n`{heroName}` {randomAttackPhrase} `{victimHeroName}` with their `{randomWeapon}`\n\n`Spell Attack: {spellDamage}`\n`Attack Roll: {attackRoll}`\n`{heroName} Attack: {heroAttack}`\n`Total Attack: {str(totalAttack)}`", color=colorRed)
+            attackEmbed.set_image(url = spellUrl)
         attackEmbed.set_thumbnail(url = heroImage)
         await channel.send(embed=attackEmbed)
         await asyncio.sleep(5)
@@ -610,7 +634,11 @@ async def heroesAttackFunc(channel):
         await asyncio.sleep(5)
 
         await setParticipantValue(victimId, 'health', str(updatedVictimHealth))
-
+        
+        if spellName != 'false':
+            await setParticipantValue(memberId, 'spellName', "false")
+            await removeSpell(memberId, serverSpellName)
+        
     return
         
 
@@ -631,6 +659,7 @@ async def newParticipant(memberName, memberId, heroName, heroClass):
         serverDict['participantsDict'][str(memberId)]['attackRoll'] = 'false'
         serverDict['participantsDict'][str(memberId)]['defenceRoll'] = 'false'
         serverDict['participantsDict'][str(memberId)]['victimName'] = 'false'
+        serverDict['participantsDict'][str(memberId)]['spellName'] = 'false'
         serverDict['participantsDict'][str(memberId)]['health'] = '100'
         serverDict['participantsDict'][str(memberId)]['memberName'] = str(memberName)
         serverDict['participantsDict'][str(memberId)]['memberId'] = str(memberId)
@@ -678,6 +707,22 @@ async def setParticipantDictValue(interaction, key, value):
 
     with open('serverDict', 'w') as f:
         json.dump(serverDict, f, indent=4)
+
+
+
+async def removeSpell(discordId, spellName):
+    # Define the endpoint URL and payload
+    url = "https://www.heroesnft.app:3002/api/removeSpell"
+    payload = {
+        "memberId": discordId,
+        "spellName": spellName
+    }
+    try:
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+
+    except requests.exceptions.RequestException as e:
+        print(f"An error occurred: {e}")
 
 
 async def getHeroData(heroName, heroClass, memberId):
@@ -878,43 +923,80 @@ async def getPlayerWithMostHealth():
     else:
         return None  # Handle the case where no participants are found
     
+async def getAliveHeroesRows(memberId):
+    
+    API_URL = "https://www.heroesnft.app:3002"
+    url = f"{API_URL}/api/alive-heroes/{memberId}"
+
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        alive_heroes = response.json().get("aliveHeroes", [])
+        return(alive_heroes)
+    except requests.exceptions.RequestException as error:
+        print(f"Error fetching alive heroes for {memberId}:", error)
+
 
 async def getHeroOptions(memberId):
 
-    wallets = await getMemberValue(memberId, 'wallets')
-    wallet = wallets[0]
-    print(wallet)
-
+    aliveHeroes = await getAliveHeroesRows(memberId)
     options = [[]]
     i = 0
-    walletDruids = await getWalletDruids(wallet)
-    for idx, (key, value) in enumerate(walletDruids.items()):
-        attack = value['attack']
-        defence = value['defence']
-        heroClass = 'druid'
+
+    for idx, hero in enumerate(aliveHeroes):
+        heroName = hero['heroName']
+        attack = hero['heroAttack']
+        defence = hero['heroDefence']
+        heroClass = hero['heroClass']
         uniqueHeroClass = f"{heroClass}_{idx}"  # Append index to make it unique - discord requires value param to be unique
 
-        options[i].append(discord.SelectOption(label=value['name'], description='Attack: '+attack+' | Defence: '+defence, emoji='⚗️', value=uniqueHeroClass,))
-
-        if len(options[i]) >= 25:
-            i += 1
-            options.append([])
-
-
-    walletKnights = await getWalletKnights(wallet)
-    for idx, (key, value) in enumerate(walletKnights.items()):
-        attack = value['attack']
-        defence = value['defence']
-        heroClass = 'knight'
-        uniqueHeroClass = f"{heroClass}_{idx}"  # Append index to make it unique - discord requires value param to be unique
-        
-        options[i].append(discord.SelectOption(label=value['name'], description='Attack: '+attack+' | Defence: '+defence, emoji='⚔️', value=uniqueHeroClass))
+        if heroClass == 'druid':
+            options[i].append(discord.SelectOption(label=heroName, description='Attack: '+attack+' | Defence: '+defence, emoji='⚗️', value=uniqueHeroClass))
+        if heroClass == 'knight':
+            options[i].append(discord.SelectOption(label=heroName, description='Attack: '+attack+' | Defence: '+defence, emoji='⚔️', value=uniqueHeroClass))
         
         if len(options[i]) >= 25:
             i += 1
             options.append([])
 
     return(options)
+
+
+# async def getHeroOptions(memberId):
+
+#     wallets = await getMemberValue(memberId, 'wallets')
+#     wallet = wallets[0]
+
+#     options = [[]]
+#     i = 0
+#     walletDruids = await getWalletDruids(wallet)
+#     for idx, (key, value) in enumerate(walletDruids.items()):
+#         attack = value['attack']
+#         defence = value['defence']
+#         heroClass = 'druid'
+#         uniqueHeroClass = f"{heroClass}_{idx}"  # Append index to make it unique - discord requires value param to be unique
+
+#         options[i].append(discord.SelectOption(label=value['name'], description='Attack: '+attack+' | Defence: '+defence, emoji='⚗️', value=uniqueHeroClass,))
+
+#         if len(options[i]) >= 25:
+#             i += 1
+#             options.append([])
+
+
+#     walletKnights = await getWalletKnights(wallet)
+#     for idx, (key, value) in enumerate(walletKnights.items()):
+#         attack = value['attack']
+#         defence = value['defence']
+#         heroClass = 'knight'
+#         uniqueHeroClass = f"{heroClass}_{idx}"  # Append index to make it unique - discord requires value param to be unique
+        
+#         options[i].append(discord.SelectOption(label=value['name'], description='Attack: '+attack+' | Defence: '+defence, emoji='⚔️', value=uniqueHeroClass))
+        
+#         if len(options[i]) >= 25:
+#             i += 1
+#             options.append([])
+
+#     return(options)
     
 
 async def getVictimOptions():
@@ -943,6 +1025,37 @@ async def getVictimOptions():
     return(options)
 
 
+
+async def getSpellOptions(discordId):
+
+    # Define the URL and parameters
+    url = "https://www.heroesnft.app:3002/api/getRow"
+    params = {
+        "id": discordId,  # Replace with the actual user ID
+        "table": "members"
+    }
+
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        memberSpells = json.loads(data.get("availableSpells", "[]"))
+
+    except requests.exceptions.RequestException as e:
+        print(f"An error occurred: {e}")
+
+    options = []
+    if "acidRain" in memberSpells:
+        options.append(discord.SelectOption(label="Acid Rain", description='Damage: 10', emoji='🌧️'))
+    if "fireBall" in memberSpells:
+        options.append(discord.SelectOption(label="Fire Ball", description='Damage: 20', emoji='🔥'))
+    if "lightningBolt" in memberSpells:
+        options.append(discord.SelectOption(label="Acid Rain", description='Damage: 30', emoji='⚡'))
+      
+    return(options)
+
+
 async def getIdFromName(discordName):
 
     f = open("serverDict")
@@ -955,7 +1068,6 @@ async def getIdFromName(discordName):
     # Iterate through participants and find the matching discordName
     for discordId, member_data in participants_dict.items():
         if member_data.get('memberName') == discordName:
-            print(f"Discord ID for {discordName}: {discordId}")
             return discordId
 
 
@@ -1160,7 +1272,6 @@ async def getMemberValue(discordId, key):
                 
                 # Parse JSON response
                 data = await response.json()
-                print(f"Value for {key}: {data.get(key)}")
                 return data.get(key)
 
     except aiohttp.ClientResponseError as http_err:
@@ -1185,7 +1296,6 @@ async def updateMemberValue(discordId, key, newValue):
                 
                 # Parse JSON response or handle success message
                 data = await response.text()
-                print(f"Member {discordId} updated with {key}: {newValue}")
                 return data
 
     except aiohttp.ClientResponseError as http_err:

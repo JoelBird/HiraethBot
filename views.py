@@ -26,7 +26,7 @@ class joinBattle(discord.ui.View):
         self.value = None
 
     #id required for persistent view/ buttons to work on bot reset
-    @discord.ui.button(custom_id = '1111', label='Join Battle', style=discord.ButtonStyle.red)
+    @discord.ui.button(custom_id = 'djifjfj31h', label='Join Battle', style=discord.ButtonStyle.red)
     async def button(self, interaction: discord.Interaction, button: discord.ui.Button):            
         await interaction.response.defer(ephemeral=True)
 
@@ -73,7 +73,7 @@ class joinBattle(discord.ui.View):
             button = theButton(label="➡️", custom_id='awdf312', style=discord.ButtonStyle.blurple)
             view.add_item(button)
 
-        embed = discord.Embed(title='Select a hero', description='Select a hero to use in this battle with the dropdown below', color=colorRed)
+        embed = discord.Embed(title='Select a Hero', description='Select a hero to use in this battle with the dropdown below', color=colorRed)
         embed.set_thumbnail(url = "https://i.postimg.cc/wMJQnydT/fotor-ai-20240403211513.jpg")
 
         await interaction.followup.send(embed=embed, view=view, ephemeral = True)
@@ -91,11 +91,41 @@ class joinBattle(discord.ui.View):
         embed.set_thumbnail(url = "https://i.postimg.cc/yYfznPPL/contoller-emoji.png")
         await interaction.followup.send(embed=embed, ephemeral = True)
 
+
+
+
+#This select is different, its a subclassed discord.ui.select, which means i can parse variables to it inside the init
+class spellSelect(discord.ui.Select):
+    def __init__(self, options) -> None:
+      super().__init__(
+        custom_id = 'f24fqf666g24',
+        placeholder = "Select a Spell",
+        options = options
+      )
+    #Just callback for this method, not select_callback
+    async def callback(self, interaction):
+        await interaction.response.defer(ephemeral=True)
+
+        spellName = str(self.values[0])
+        await botFunctions.setParticipantDictValue(interaction, 'spellName', spellName)
+        
+        if spellName == "Acid Rain":
+            imageUrl = "https://i.postimg.cc/0QLTnjGj/acid-rain-spell.webp"
+        if spellName == "Fire Ball":
+            imageUrl = "https://i.postimg.cc/Z5VXgVP1/fire-bolt-spell.webp"
+        if spellName == "Lightning Bolt":
+            imageUrl = "https://i.postimg.cc/yNGt6xbj/lightning-bolt-spell.webp"
+
+        embed = discord.Embed(title=spellName, description=f"You have chosen to use `{spellName}` on your victim", color=colorRed) #victimeName Doesnt work with ``
+        embed.set_thumbnail(url = imageUrl)
+        await interaction.followup.send(embed=embed, ephemeral = True)
+
+
 #This select is different, its a subclassed discord.ui.select, which means i can parse variables to it inside the init
 class victimSelect(discord.ui.Select):
     def __init__(self, options) -> None:
       super().__init__(
-        custom_id = 'awdaf3r1231',
+        custom_id = 'g3r12dewf21',
         placeholder = "Select a Victim",
         options = options
       )
@@ -117,7 +147,7 @@ class victimSelect(discord.ui.Select):
         
         victimName = str(self.values[0])
         if victimName == str(interaction.user.name):
-            embed = discord.Embed(title="",description=f'You cannot Attack yourself', color=colorBlack)
+            embed = discord.Embed(title="",description=f'You cannot attack yourself', color=colorBlack)
             await interaction.followup.send(embed=embed, ephemeral = True)
             return
 
@@ -138,7 +168,7 @@ class heroSelect(discord.ui.Select):
     def __init__(self, options) -> None:
       super().__init__(
         custom_id = 'gw4dd12r21ed13',
-        placeholder = "Select a hero",
+        placeholder = "Select a Hero",
         options = options
       )
     #Just callback for this method, not select_callback
@@ -161,7 +191,7 @@ class heroSelect(discord.ui.Select):
         if 'druid' in uniqueHeroClass:
             embed = discord.Embed(title=heroName, description=f"`Attack: {heroData['attack']}\nDefence: {heroData['defence']}\nStaff: {heroData['staff']}\nSpell: {heroData['spell']}\nWeapon: {heroData['weapon']}`", color=colorBlack)
             embed.set_image(url = str(heroData['image']))
-            embed.set_thumbnail(url = "https://i.postimg.cc/8zDxCFvw/druid-orb.png")
+            embed.set_thumbnail(url = "https://i.postimg.cc/Kv3fPQ4Z/druid-orb.png")
 
         view = discord.ui.View()
         options = await botFunctions.getHeroOptions(interaction.user.id)
@@ -222,7 +252,7 @@ class theButton(discord.ui.Button):
             if battleMode == '1v1' and int(numberOfParticipants) == 2:
                 await botFunctions.startBattle(interaction.client)
 
-        if self.label == "Roll For Attack":
+        if self.label == "Use A Spell":
             await interaction.response.defer(ephemeral=True)
 
             isParticipant = await botFunctions.isParticipant(interaction)
@@ -237,42 +267,77 @@ class theButton(discord.ui.Button):
                 await interaction.followup.send(embed=embed, ephemeral = True)
                 return
             
-            hasRolledForAttack, roll = await botFunctions.hasRolledForAttack(interaction)
-            if hasRolledForAttack == True:
-                embed = discord.Embed(title="",description=f'You have already rolled a `{roll}` for Attack', color=colorBlack)
-                await interaction.followup.send(embed=embed, ephemeral = True)
+            view = discord.ui.View()
+            options = await botFunctions.getSpellOptions(interaction.user.id)
+
+            if len(options) == 0:
+                embed = discord.Embed(title="You do not have any spells",description="Go to `heroesnft.app` to get a spell", color=colorBlack)
+                view = discord.ui.View()
+                url = 'https://heroesnft.app'
+                view.add_item(discord.ui.Button(label = 'heroesnft.app', style = discord.ButtonStyle.link, url = url))
+                await interaction.followup.send(embed=embed, view=view, ephemeral = True)
                 return
 
-            random_number = random.randint(0, 100)
-            await botFunctions.setParticipantDictValue(interaction, 'attackRoll', random_number)
-            embed = discord.Embed(title="",description=f'You have rolled `{random_number}` for Attack', color=colorRed)
-            await interaction.followup.send(embed=embed, ephemeral = True)
-
-        if self.label == "Roll For Defence":
-            await interaction.response.defer(ephemeral=True)
-
-            isParticipant = await botFunctions.isParticipant(interaction)
-            if isParticipant == False:
-                embed = discord.Embed(title="",description='You are not a participant of this battle', color=colorBlack)
-                await interaction.followup.send(embed=embed, ephemeral = True)
-                return
+            select = spellSelect(options=options)
+            view.add_item(select)
             
-            health = await botFunctions.getParticipantValue(interaction.user.id, 'health')
-            if int(health) <= 0:
-                embed = discord.Embed(title="",description="Your Hero is dead", color=colorBlack)
-                await interaction.followup.send(embed=embed, ephemeral = True)
-                return
-            
-            hasRolledForDefence, roll = await botFunctions.hasRolledForDefence(interaction)
-            if hasRolledForDefence == True:
-                embed = discord.Embed(title="",description=f'You have already rolled a `{roll}` for Defence', color=colorBlack)
-                await interaction.followup.send(embed=embed, ephemeral = True)
-                return
+            embed = discord.Embed(title="Select a spell below", color=colorGold)
+            embed.set_thumbnail(url = "https://i.postimg.cc/NMQJjYjL/mystery-spell.webp")
 
-            random_number = random.randint(0, 50)
-            await botFunctions.setParticipantDictValue(interaction, 'defenceRoll', random_number)
-            embed = discord.Embed(title="",description=f'You have rolled `{random_number}` for Defence', color=colorCyan)
-            await interaction.followup.send(embed=embed, ephemeral = True)
+            await interaction.followup.send(embed=embed, view=view, ephemeral = True)
+
+
+        # if self.label == "Roll For Attack":
+        #     await interaction.response.defer(ephemeral=True)
+
+        #     isParticipant = await botFunctions.isParticipant(interaction)
+        #     if isParticipant == False:
+        #         embed = discord.Embed(title="",description='You are not a participant of this battle', color=colorBlack)
+        #         await interaction.followup.send(embed=embed, ephemeral = True)
+        #         return
+            
+        #     health = await botFunctions.getParticipantValue(interaction.user.id, 'health')
+        #     if int(health) <= 0:
+        #         embed = discord.Embed(title="",description="Your Hero is dead", color=colorBlack)
+        #         await interaction.followup.send(embed=embed, ephemeral = True)
+        #         return
+            
+        #     hasRolledForAttack, roll = await botFunctions.hasRolledForAttack(interaction)
+        #     if hasRolledForAttack == True:
+        #         embed = discord.Embed(title="",description=f'You have already rolled a `{roll}` for Attack', color=colorBlack)
+        #         await interaction.followup.send(embed=embed, ephemeral = True)
+        #         return
+
+        #     random_number = random.randint(0, 100)
+        #     await botFunctions.setParticipantDictValue(interaction, 'attackRoll', random_number)
+        #     embed = discord.Embed(title="",description=f'You have rolled `{random_number}` for Attack', color=colorRed)
+        #     await interaction.followup.send(embed=embed, ephemeral = True)
+
+        # if self.label == "Roll For Defence":
+        #     await interaction.response.defer(ephemeral=True)
+
+        #     isParticipant = await botFunctions.isParticipant(interaction)
+        #     if isParticipant == False:
+        #         embed = discord.Embed(title="",description='You are not a participant of this battle', color=colorBlack)
+        #         await interaction.followup.send(embed=embed, ephemeral = True)
+        #         return
+            
+        #     health = await botFunctions.getParticipantValue(interaction.user.id, 'health')
+        #     if int(health) <= 0:
+        #         embed = discord.Embed(title="",description="Your Hero is dead", color=colorBlack)
+        #         await interaction.followup.send(embed=embed, ephemeral = True)
+        #         return
+            
+        #     hasRolledForDefence, roll = await botFunctions.hasRolledForDefence(interaction)
+        #     if hasRolledForDefence == True:
+        #         embed = discord.Embed(title="",description=f'You have already rolled a `{roll}` for Defence', color=colorBlack)
+        #         await interaction.followup.send(embed=embed, ephemeral = True)
+        #         return
+
+        #     random_number = random.randint(0, 50)
+        #     await botFunctions.setParticipantDictValue(interaction, 'defenceRoll', random_number)
+        #     embed = discord.Embed(title="",description=f'You have rolled `{random_number}` for Defence', color=colorCyan)
+        #     await interaction.followup.send(embed=embed, ephemeral = True)
 
 
         if self.label == "⬅️":
@@ -297,7 +362,7 @@ class theButton(discord.ui.Button):
                 view.add_item(button)
 
             title = interaction.message.embeds[0].title
-            if title != 'Select a hero':
+            if title != 'Select a Hero':
                 button = theButton(label="Select Hero", custom_id=title, style=discord.ButtonStyle.green)
                 view.add_item(button)
 
@@ -326,7 +391,7 @@ class theButton(discord.ui.Button):
                 view.add_item(button)
 
             title = interaction.message.embeds[0].title
-            if title != 'Select a hero':
+            if title != 'Select a Hero':
                 button = theButton(label="Select Hero", custom_id=title, style=discord.ButtonStyle.green)
                 view.add_item(button)
 
