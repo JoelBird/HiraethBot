@@ -1,26 +1,11 @@
 {
     "participantsDict": {
-        "433648637763911680": {
-            "attackRoll": "false",
-            "defenceRoll": "false",
-            "victimName": "false",
-            "spellName": "false",
-            "health": "100",
-            "memberName": "joelbird.",
-            "memberId": "433648637763911680",
-            "heroName": "Knights of Hiraeth #326",
-            "heroAttack": "4",
-            "heroDefence": "4",
-            "heroImage": "https://bafybeibuaivgzdydcco27645kowurcf5425inok4snnbbrwiyb5yrx43k4.ipfs.nftstorage.link/",
-            "heroClass": "knight",
-            "weapon1": "Morning Star",
-            "weapon2": "None"
-        }
+       
     },
     "battleStartUnix": "false",
     "battleMessageId": "1312840933368266752",
     "battleChannelId": "1310659020335349913",
-    "battleInSession": "true",
+    "battleInSession": "false",
     "battleMode": "participants",
     "participantsToStart": "2",
     "battleSet": "false",
