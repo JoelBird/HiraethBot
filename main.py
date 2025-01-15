@@ -58,7 +58,7 @@ slashCommands(tree)
 f = open("tokens")
 s = f.read()
 tokensDict = json.loads(s)
-HiraethBotToken = tokensDict["HiraethBotToken"]
+HiraethBotToken = tokensDict["HiraethTestBotToken"]
 
 
 HiraethBot.run(str(HiraethBotToken))

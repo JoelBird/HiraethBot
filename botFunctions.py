@@ -1219,7 +1219,7 @@ async def extractAndSortWins():
 
     allMembers = await getAllMembers()
     # Extract "Wins" and "discordName" values into a list of tuples
-    wins_and_names = [(int(data["wins"]), data["discordName"]) for data in allMembers.values() if int(data["wins"]) > 0]
+    wins_and_names = [(int(data["wins"]), data["discordName"]) for data in allMembers if int(data["wins"]) > 0]
     # Sort the list of tuples based on the "Wins" value
     sorted_wins_and_names = sorted(wins_and_names, reverse=True)
     return sorted_wins_and_names

@@ -1,11 +1,9 @@
 {
-    "participantsDict": {
-       
-    },
+    "participantsDict": {},
     "battleStartUnix": "false",
-    "battleMessageId": "1312840933368266752",
+    "battleMessageId": "1329229921414807683",
     "battleChannelId": "1310659020335349913",
-    "battleInSession": "false",
+    "battleInSession": "true",
     "battleMode": "participants",
     "participantsToStart": "2",
     "battleSet": "false",
